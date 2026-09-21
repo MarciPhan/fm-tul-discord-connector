@@ -1,0 +1,15 @@
+# Binaries
+fm-tul-bot
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Temporary files
+*.tmp
+users_*.tmp
+feeds_*.tmp
+discord_config_*.tmp
+
+# Test artifacts
+users_test_*.json
