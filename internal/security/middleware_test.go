@@ -97,3 +97,45 @@ func TestSecurityHeaders(t *testing.T) {
 		t.Error("Chybí striktní Content-Security-Policy")
 	}
 }
+
+func TestOriginTrailingSlash(t *testing.T) {
+	// BaseURL s lomítkem na konci nesmí rozbít legitimní Origin bez lomítka
+	config.Cfg.BaseURL = "https://login.fm.tul.cz/"
+
+	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	middleware := Middleware(dummyHandler)
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("Origin", "https://login.fm.tul.cz")
+	w := httptest.NewRecorder()
+	middleware.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Očekáváno 200 OK pro normalizovaný Origin, získáno: %d", w.Code)
+	}
+}
+
+func TestGetClientIPValidation(t *testing.T) {
+	// 1. Platná IP v X-Forwarded-For
+	req1 := httptest.NewRequest("GET", "/", nil)
+	req1.Header.Set("X-Forwarded-For", "195.113.120.5, 10.0.0.1")
+	if ip := GetClientIP(req1); ip != "195.113.120.5" {
+		t.Errorf("Očekávána IP 195.113.120.5, získáno: %s", ip)
+	}
+
+	// 2. Podvržený neplatný řetězec v X-Forwarded-For nesmí projít jako IP
+	req2 := httptest.NewRequest("GET", "/", nil)
+	req2.RemoteAddr = "192.0.2.1:12345"
+	req2.Header.Set("X-Forwarded-For", "evil-spoofed-header<script>")
+	if ip := GetClientIP(req2); ip != "192.0.2.1" {
+		t.Errorf("Očekáván fallback na RemoteAddr 192.0.2.1, získáno: %s", ip)
+	}
+
+	// 3. X-Real-IP s platnou IP
+	req3 := httptest.NewRequest("GET", "/", nil)
+	req3.Header.Set("X-Real-IP", "147.230.1.1")
+	if ip := GetClientIP(req3); ip != "147.230.1.1" {
+		t.Errorf("Očekávána IP 147.230.1.1, získáno: %s", ip)
+	}
+}

@@ -61,8 +61,9 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	
 	respondEphemeral(s, i, "✅ Ověřovací zpráva byla odeslána do tohoto kanálu.")
 	
-	log.Printf("📢 /setup: správce %s odeslal ověřovací zprávu (ID: %s)", i.Member.User.Username, sentMsg.ID)
-	audit.Log(audit.LevelInfo, "🛠️ Inicializace serveru", "Správce **"+i.Member.User.Username+"** vytvořil pomocí `/setup` ověřovací bod.")
+	username := GetInteractionUsername(i)
+	log.Printf("📢 /setup: správce %s odeslal ověřovací zprávu (ID: %s)", username, sentMsg.ID)
+	audit.Log(audit.LevelInfo, "🛠️ Inicializace serveru", "Správce **"+username+"** vytvořil pomocí `/setup` ověřovací bod.")
 }
 
 func init() {

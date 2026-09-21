@@ -14,11 +14,6 @@ var stopAuditChan chan struct{}
 
 // StartAuditWorker spouští asynchronní zpracování audit logů z fronty do Discordu
 func StartAuditWorker(s *discordgo.Session) {
-	if config.GetAuditChannelID() == "" {
-		log.Println("ℹ️ DISCORD_AUDIT_CHANNEL_ID není nastaven – Audit log se nebude odesílat do Discordu.")
-		return
-	}
-
 	stopAuditChan = make(chan struct{})
 	eventChan := audit.GetChannel()
 
@@ -27,7 +22,12 @@ func StartAuditWorker(s *discordgo.Session) {
 		for {
 			select {
 			case evt := <-eventChan:
-				sendAuditEmbed(s, evt)
+				auditChannel := config.GetAuditChannelID()
+				if auditChannel != "" && s != nil {
+					sendAuditEmbed(s, auditChannel, evt)
+				} else {
+					log.Printf("[AUDIT LOG] %s: %s", evt.Title, evt.Description)
+				}
 			case <-stopAuditChan:
 				log.Println("🛑 Audit Worker zastaven.")
 				return
@@ -44,7 +44,7 @@ func StopAuditWorker() {
 }
 
 // sendAuditEmbed sestaví a odešle zprávu do auditního kanálu
-func sendAuditEmbed(s *discordgo.Session, evt audit.Event) {
+func sendAuditEmbed(s *discordgo.Session, auditChannel string, evt audit.Event) {
 	var color int
 
 	switch evt.Level {
@@ -68,7 +68,6 @@ func sendAuditEmbed(s *discordgo.Session, evt audit.Event) {
 		},
 	}
 
-	auditChannel := config.GetAuditChannelID()
 	_, err := s.ChannelMessageSendEmbed(auditChannel, embed)
 	if err != nil {
 		log.Printf("⚠️ Nelze odeslat audit log do kanálu %s: %v", auditChannel, err)

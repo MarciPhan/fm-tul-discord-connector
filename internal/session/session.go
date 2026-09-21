@@ -24,6 +24,59 @@ type Session struct {
 	DiscordState     string
 	CreatedAt        time.Time
 	ExpiresAt        time.Time
+	Mux              sync.RWMutex
+}
+
+// GetStudent bezpečně vrátí studenta
+func (s *Session) GetStudent() *storage.Student {
+	s.Mux.RLock()
+	defer s.Mux.RUnlock()
+	return s.Student
+}
+
+// SetStudent bezpečně nastaví studenta
+func (s *Session) SetStudent(student *storage.Student) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	s.Student = student
+}
+
+// SetMSALAuth atomicky nastaví state a PKCE verifier pro Microsoft OAuth
+func (s *Session) SetMSALAuth(state, verifier string) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	s.MSALState = state
+	s.MSALCodeVerifier = verifier
+}
+
+// SetDiscordState atomicky nastaví state pro Discord OAuth
+func (s *Session) SetDiscordState(state string) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	s.DiscordState = state
+}
+
+// ConsumeMSALState atomicky ověří a spotřebuje MSAL state token (ochrana proti CSRF a replay útokům)
+func (s *Session) ConsumeMSALState(expectedState string) (verifier string, ok bool) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	if expectedState == "" || s.MSALState == "" || !security.ConstantTimeCompare(expectedState, s.MSALState) {
+		return "", false
+	}
+	v := s.MSALCodeVerifier
+	s.MSALState = ""
+	return v, true
+}
+
+// ConsumeDiscordState atomicky ověří a spotřebuje Discord state token (ochrana proti CSRF a replay útokům)
+func (s *Session) ConsumeDiscordState(expectedState string) bool {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	if expectedState == "" || s.DiscordState == "" || !security.ConstantTimeCompare(expectedState, s.DiscordState) {
+		return false
+	}
+	s.DiscordState = ""
+	return true
 }
 
 var (

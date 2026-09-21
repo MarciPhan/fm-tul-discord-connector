@@ -62,10 +62,21 @@ func SaveDynamic() error {
 	}
 	tmpName := tmpFile.Name()
 	_ = tmpFile.Chmod(0600)
-	_, _ = tmpFile.Write(data)
-	_ = tmpFile.Close()
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
 
-	return os.Rename(tmpName, ConfigFile)
+	if err := os.Rename(tmpName, ConfigFile); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // GetWelcomeChannelID vrací uvítací kanál (nejprve dynamický, pak fallback .env)

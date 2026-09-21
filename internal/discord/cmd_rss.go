@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +37,27 @@ var (
 	stopRSSChan  chan struct{}
 )
 
+// isValidRSSURL ověřuje formát URL a chrání proti SSRF útokům na interní sítě
+func isValidRSSURL(rawURL string) error {
+	u, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return fmt.Errorf("neplatný formát URL")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("povoleny jsou pouze http a https protokoly")
+	}
+	hostname := strings.ToLower(u.Hostname())
+	if hostname == "" || hostname == "localhost" || hostname == "::1" || strings.HasPrefix(hostname, "127.") {
+		return fmt.Errorf("nelze přidat lokální síťovou adresu (SSRF ochrana)")
+	}
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+			return fmt.Errorf("nelze přidat privátní nebo interní IP adresu (SSRF ochrana)")
+		}
+	}
+	return nil
+}
+
 // loadFeeds načte uložené feedy ze souboru
 func loadFeeds() {
 	feedsMux.Lock()
@@ -53,11 +78,12 @@ func loadFeeds() {
 // saveFeeds uloží feedy do souboru atomicky
 func saveFeeds() {
 	feedsMux.RLock()
-	defer feedsMux.RUnlock()
 	var list []*FeedEntry
 	for _, f := range feedsDB {
 		list = append(list, f)
 	}
+	feedsMux.RUnlock()
+
 	data, err := json.MarshalIndent(list, "", "  ")
 	if err != nil {
 		log.Printf("⚠️ RSS save error: %v", err)
@@ -69,8 +95,15 @@ func saveFeeds() {
 	}
 	tmpName := tmpFile.Name()
 	_ = tmpFile.Chmod(0600)
-	_, _ = tmpFile.Write(data)
-	_ = tmpFile.Close()
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpName)
+		return
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return
+	}
 	_ = os.Rename(tmpName, FeedsFile)
 }
 
@@ -111,13 +144,27 @@ func StopRSSWorker() {
 }
 
 func checkAllFeeds(s *discordgo.Session) {
-	feedsMux.Lock()
-	defer feedsMux.Unlock()
+	feedsMux.RLock()
+	entries := make([]*FeedEntry, 0, len(feedsDB))
+	for _, f := range feedsDB {
+		entries = append(entries, &FeedEntry{
+			ID:        f.ID,
+			URL:       f.URL,
+			ChannelID: f.ChannelID,
+			AddedBy:   f.AddedBy,
+			LastGuid:  f.LastGuid,
+			UpdatedAt: f.UpdatedAt,
+		})
+	}
+	feedsMux.RUnlock()
 
+	client := &http.Client{Timeout: 10 * time.Second}
 	fp := gofeed.NewParser()
-	updated := false
+	fp.Client = client
 
-	for _, feedEntry := range feedsDB {
+	updates := make(map[string]string) // ID -> newGuid
+
+	for _, feedEntry := range entries {
 		feed, err := fp.ParseURL(feedEntry.URL)
 		if err != nil {
 			log.Printf("⚠️ RSS chyba načítání %s: %v", feedEntry.URL, err)
@@ -147,16 +194,20 @@ func checkAllFeeds(s *discordgo.Session) {
 			} else {
 				log.Printf("📰 RSS Inicializováno: %s", feedEntry.URL)
 			}
-			feedEntry.LastGuid = guid
-			feedEntry.UpdatedAt = time.Now()
-			updated = true
+			updates[feedEntry.ID] = guid
 		}
 	}
 
-	if updated {
-		// Unlock because saveFeeds requires RLock, so we unlock early, but we must do it carefully.
-		// Since we modify feedsDB in-place, we should do it while locked. Let's start a goroutine for save.
-		go saveFeeds()
+	if len(updates) > 0 {
+		feedsMux.Lock()
+		for id, newGuid := range updates {
+			if entry, ok := feedsDB[id]; ok {
+				entry.LastGuid = newGuid
+				entry.UpdatedAt = time.Now()
+			}
+		}
+		feedsMux.Unlock()
+		saveFeeds()
 	}
 }
 
@@ -251,20 +302,30 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	username := GetInteractionUsername(i)
+	userID := GetInteractionUserID(i)
+
 	subcmd := options[0]
 	switch subcmd.Name {
 	case "add":
 		var url, channelID string
 		for _, opt := range subcmd.Options {
 			if opt.Name == "url" {
-				url = opt.StringValue()
+				url = strings.TrimSpace(opt.StringValue())
 			} else if opt.Name == "kanal" {
 				channelID = opt.ChannelValue(s).ID
 			}
 		}
 
-		// Zkusebni parsovani
+		if err := isValidRSSURL(url); err != nil {
+			respondEphemeral(s, i, fmt.Sprintf("❌ Neplatná nebo nepovolená URL feedu: %v", err))
+			return
+		}
+
+		// Zkusebni parsovani s timeoutem
+		client := &http.Client{Timeout: 10 * time.Second}
 		fp := gofeed.NewParser()
+		fp.Client = client
 		_, err := fp.ParseURL(url)
 		if err != nil {
 			respondEphemeral(s, i, fmt.Sprintf("❌ Chyba načtení RSS feedu (je adresa správná?): %v", err))
@@ -277,13 +338,13 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			ID:        id,
 			URL:       url,
 			ChannelID: channelID,
-			AddedBy:   i.Member.User.ID,
+			AddedBy:   userID,
 			UpdatedAt: time.Now(),
 		}
 		feedsMux.Unlock()
 		saveFeeds()
 		respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` úspěšně přidán pro kanál <#%s>. (ID: `%s`)", url, channelID, id))
-		audit.Log(audit.LevelInfo, "📡 RSS přidáno", fmt.Sprintf("Správce **%s** přidal RSS feed `%s` pro kanál <#%s>.", i.Member.User.Username, url, channelID))
+		audit.Log(audit.LevelInfo, "📡 RSS přidáno", fmt.Sprintf("Správce **%s** přidal RSS feed `%s` pro kanál <#%s>.", username, url, channelID))
 
 	case "list":
 		feedsMux.RLock()
@@ -306,7 +367,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			feedsMux.Unlock()
 			saveFeeds()
 			respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` byl odstraněn.", id))
-			audit.Log(audit.LevelWarning, "📡 RSS odebráno", fmt.Sprintf("Správce **%s** odebral RSS feed s ID `%s`.", i.Member.User.Username, id))
+			audit.Log(audit.LevelWarning, "📡 RSS odebráno", fmt.Sprintf("Správce **%s** odebral RSS feed s ID `%s`.", username, id))
 		} else {
 			feedsMux.Unlock()
 			respondEphemeral(s, i, "❌ Feed s tímto ID nebyl nalezen.")

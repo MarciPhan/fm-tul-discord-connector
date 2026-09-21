@@ -78,10 +78,11 @@ func (c *CmdEdit) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	username := GetInteractionUsername(i)
 	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva `%s` v <#%s> byla úspěšně upravena.", messageID, channelID))
-	log.Printf("✏️ /edit: správce %s upravil zprávu %s v kanálu %s", i.Member.User.Username, messageID, channelID)
+	log.Printf("✏️ /edit: správce %s upravil zprávu %s v kanálu %s", username, messageID, channelID)
 
-	audit.Log(audit.LevelInfo, "✏️ Příkaz /edit", fmt.Sprintf("Správce **%s** upravil zprávu `%s` v kanálu <#%s>.\n**Nový text:** %s", i.Member.User.Username, messageID, channelID, newText))
+	audit.Log(audit.LevelInfo, "✏️ Příkaz /edit", fmt.Sprintf("Správce **%s** upravil zprávu `%s` v kanálu <#%s>.\n**Nový text:** %s", username, messageID, channelID, newText))
 }
 
 func init() {

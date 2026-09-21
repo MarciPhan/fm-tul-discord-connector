@@ -91,3 +91,35 @@ func respondEphemeral(s *discordgo.Session, i *discordgo.InteractionCreate, msg 
 		},
 	})
 }
+
+// GetInteractionUser bezpečně získá uživatele z interakce (podporuje server i DM)
+func GetInteractionUser(i *discordgo.InteractionCreate) *discordgo.User {
+	if i == nil {
+		return nil
+	}
+	if i.Member != nil && i.Member.User != nil {
+		return i.Member.User
+	}
+	if i.User != nil {
+		return i.User
+	}
+	return nil
+}
+
+// GetInteractionUsername bezpečně získá uživatelské jméno
+func GetInteractionUsername(i *discordgo.InteractionCreate) string {
+	u := GetInteractionUser(i)
+	if u != nil {
+		return u.Username
+	}
+	return "Neznámý uživatel"
+}
+
+// GetInteractionUserID bezpečně získá ID uživatele
+func GetInteractionUserID(i *discordgo.InteractionCreate) string {
+	u := GetInteractionUser(i)
+	if u != nil {
+		return u.ID
+	}
+	return ""
+}

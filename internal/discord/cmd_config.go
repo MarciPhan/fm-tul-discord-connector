@@ -106,14 +106,14 @@ func (c *CmdConfig) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 			msg = fmt.Sprintf("✅ Welcome kanál byl nastaven na <#%s>.", channelID)
 		} else if typ == "audit" {
 			err = config.SetAuditChannelID(channelID)
-			msg = fmt.Sprintf("✅ Audit kanál byl nastaven na <#%s>. Restartujte bota pro aplikování Workeru.", channelID)
+			msg = fmt.Sprintf("✅ Audit kanál byl nastaven na <#%s>.", channelID)
 		}
 		
 		if err != nil {
 			respondEphemeral(s, i, "❌ Chyba při ukládání: "+err.Error())
 		} else {
 			respondEphemeral(s, i, msg)
-			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil %s kanál na <#%s>.", i.Member.User.Username, typ, channelID))
+			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil %s kanál na <#%s>.", GetInteractionUsername(i), typ, channelID))
 		}
 
 	case "set-role":
@@ -137,7 +137,7 @@ func (c *CmdConfig) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 			respondEphemeral(s, i, "❌ Chyba při ukládání: "+err.Error())
 		} else {
 			respondEphemeral(s, i, msg)
-			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil roli %s na <@&%s>.", i.Member.User.Username, typ, roleID))
+			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil roli %s na <@&%s>.", GetInteractionUsername(i), typ, roleID))
 		}
 
 	case "set-message":
@@ -147,7 +147,7 @@ func (c *CmdConfig) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 			respondEphemeral(s, i, "❌ Chyba při ukládání: "+err.Error())
 		} else {
 			respondEphemeral(s, i, "✅ Uvítací zpráva byla upravena:\n\n"+text)
-			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil Welcome zprávu.", i.Member.User.Username))
+			audit.Log(audit.LevelInfo, "⚙️ Změna konfigurace", fmt.Sprintf("Admin **%s** změnil Welcome zprávu.", GetInteractionUsername(i)))
 		}
 
 	case "view":

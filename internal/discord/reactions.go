@@ -38,27 +38,40 @@ func IsVerifyReaction(emojiName, emojiAPI, messageID, botUserID, reactingUserID 
 
 // HandleReactionAdd zpracuje reakci na zpravu a odesle DM s odkazem na overeni
 func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	if r == nil {
+		return
+	}
 	botID := ""
-	if s.State != nil && s.State.User != nil {
+	if s != nil && s.State != nil && s.State.User != nil {
 		botID = s.State.User.ID
 	}
-	if !IsVerifyReaction(r.Emoji.Name, r.Emoji.APIName(), r.MessageID, botID, r.UserID) {
+	emojiName := r.Emoji.Name
+	emojiAPI := r.Emoji.APIName()
+	if !IsVerifyReaction(emojiName, emojiAPI, r.MessageID, botID, r.UserID) {
 		return
 	}
 
 	// Cooldown kontrola (max 1 reakce za 30 sekund na uzivatele)
 	reactionCooldownsMux.Lock()
-	lastTime, exists := reactionCooldowns[r.UserID]
 	now := time.Now()
+	// Automatické promazání starých záznamů pro prevenci memory leaku
+	if len(reactionCooldowns) > 100 {
+		for uID, t := range reactionCooldowns {
+			if now.Sub(t) > 5*time.Minute {
+				delete(reactionCooldowns, uID)
+			}
+		}
+	}
+	lastTime, exists := reactionCooldowns[r.UserID]
 	if exists && now.Sub(lastTime) < 30*time.Second {
 		reactionCooldownsMux.Unlock()
-		_ = s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
+		_ = s.MessageReactionRemove(r.ChannelID, r.MessageID, emojiAPI, r.UserID)
 		return
 	}
 	reactionCooldowns[r.UserID] = now
 	reactionCooldownsMux.Unlock()
 
-	log.Printf("🔔 Uživatel %s kliknul na reakci %s na zprávě %s", r.UserID, r.Emoji.Name, r.MessageID)
+	log.Printf("🔔 Uživatel %s kliknul na reakci %s na zprávě %s", r.UserID, emojiName, r.MessageID)
 
 	dmChannel, err := s.UserChannelCreate(r.UserID)
 	if err != nil {

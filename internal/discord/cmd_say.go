@@ -59,10 +59,11 @@ func (c *CmdSay) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		return
 	}
 
+	username := GetInteractionUsername(i)
 	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva odeslána do <#%s> (ID: `%s`)", channelID, sentMsg.ID))
-	log.Printf("📢 /say: správce %s odeslal zprávu do kanálu %s", i.Member.User.Username, channelID)
+	log.Printf("📢 /say: správce %s odeslal zprávu do kanálu %s", username, channelID)
 
-	audit.Log(audit.LevelInfo, "📢 Příkaz /say", fmt.Sprintf("Správce **%s** odeslal zprávu do kanálu <#%s>.\n**Obsah:** %s", i.Member.User.Username, channelID, message))
+	audit.Log(audit.LevelInfo, "📢 Příkaz /say", fmt.Sprintf("Správce **%s** odeslal zprávu do kanálu <#%s>.\n**Obsah:** %s", username, channelID, message))
 }
 
 func init() {

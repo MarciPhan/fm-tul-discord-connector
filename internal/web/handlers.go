@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"sbibolet/internal/audit"
@@ -17,6 +18,22 @@ import (
 	"sbibolet/internal/session"
 	"sbibolet/internal/storage"
 )
+
+// isValidDiscordInvite ověří, že zadaná URL je validní Discord invite (prevence Open Redirect)
+func isValidDiscordInvite(rawURL string) bool {
+	if rawURL == "" || rawURL == "https://discord.gg/vase-pozvanka" {
+		return false
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "https" {
+		return false
+	}
+	host := strings.ToLower(u.Host)
+	return host == "discord.gg" || host == "discord.com" || strings.HasSuffix(host, ".discord.com")
+}
 
 // --- OAUTH2 URL GENEROVANI ---
 
@@ -62,18 +79,19 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Vygenerujeme novy kryptograficky state a PKCE pro Microsoft krok
-	sess.MSALState = security.GenerateStateToken()
+	msState := security.GenerateStateToken()
 	verifier, challenge := security.GeneratePKCE()
-	sess.MSALCodeVerifier = verifier
+	sess.SetMSALAuth(msState, verifier)
 
 	// Vygenerujeme state pro Discord krok
-	sess.DiscordState = security.GenerateStateToken()
+	discordState := security.GenerateStateToken()
+	sess.SetDiscordState(discordState)
 
-	msURL := getMicrosoftLoginURL(origin, sess.MSALState, challenge)
-	discordURL := getDiscordLoginURL(origin, sess.DiscordState)
+	msURL := getMicrosoftLoginURL(origin, msState, challenge)
+	discordURL := getDiscordLoginURL(origin, discordState)
 
 	data := map[string]interface{}{
-		"Session":       sess.Student,
+		"Session":       sess.GetStudent(),
 		"MSURL":         msURL,
 		"DiscordURL":    discordURL,
 		"InviteURL":     config.Cfg.DiscordInviteURL,
@@ -100,15 +118,14 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Striktni validace CSRF parametru state
+	// 1. Striktni validace CSRF parametru state s atomickym spotrebovanim
 	reqState := r.URL.Query().Get("state")
-	if reqState == "" || sess.MSALState == "" || !security.ConstantTimeCompare(reqState, sess.MSALState) {
+	verifier, ok := sess.ConsumeMSALState(reqState)
+	if !ok {
 		log.Printf("🚨 Bezpečnostní varování: Neplatný MSAL state parametr od IP %s", ip)
-		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok).", http.StatusForbidden)
+		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok nebo opakovaný požadavek).", http.StatusForbidden)
 		return
 	}
-	// Spotrebujeme state token
-	sess.MSALState = ""
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -135,7 +152,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
-		"code_verifier": {sess.MSALCodeVerifier},
+		"code_verifier": {verifier},
 	}
 
 	resp, err := http.PostForm(tokenURL, form)
@@ -194,14 +211,14 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 
 	role := security.DetermineRole(profile.JobTitle, email)
 
-	sess.Student = &storage.Student{
+	sess.SetStudent(&storage.Student{
 		MicrosoftID: profile.ID,
 		Name:        profile.DisplayName,
 		Email:       email,
 		Faculty:     "FM",
 		Role:        role,
 		VerifiedAt:  time.Now(),
-	}
+	})
 
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -216,19 +233,23 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sess := session.GetExisting(r)
-	if sess == nil || sess.Student == nil {
+	if sess == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	student := sess.GetStudent()
+	if student == nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
-	// 1. Striktni validace CSRF state parametru
+	// 1. Striktni validace CSRF state parametru s atomickym spotrebovanim
 	reqState := r.URL.Query().Get("state")
-	if reqState == "" || sess.DiscordState == "" || !security.ConstantTimeCompare(reqState, sess.DiscordState) {
+	if !sess.ConsumeDiscordState(reqState) {
 		log.Printf("🚨 Bezpečnostní varování: Neplatný Discord state parametr od IP %s", ip)
-		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok).", http.StatusForbidden)
+		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok nebo opakovaný požadavek).", http.StatusForbidden)
 		return
 	}
-	sess.DiscordState = ""
 
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -283,33 +304,35 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(uResp.Body).Decode(&discordUser)
 
-	sess.Student.DiscordID = discordUser.ID
+	student.DiscordID = discordUser.ID
 
 	// 4. Kontrola striktni vazby 1:1 (Anti-Multi-Accounting)
-	if err := storage.CheckBindingAllowed(sess.Student); err != nil {
+	if err := storage.CheckBindingAllowed(student); err != nil {
 		log.Printf("⛔ Zamítnuto vícenásobné spárování účtu: %v", err)
-		audit.Log(audit.LevelDanger, "⛔ Zablokován Multi-Accounting", fmt.Sprintf("Uživatel **%s** (%s) se pokusil ověřit více Discord účtů.", sess.Student.Name, sess.Student.Email))
+		audit.Log(audit.LevelDanger, "⛔ Zablokován Multi-Accounting", fmt.Sprintf("Uživatel **%s** (%s) se pokusil ověřit více Discord účtů.", student.Name, student.Email))
 		http.Error(w, fmt.Sprintf("Bezpečnostní omezení: %v", err), http.StatusConflict)
 		return
 	}
 
 	// 5. Automaticke pripojeni na server a prirazeni roli
-	err = discord.PerformJoinAndRoleDirect(discordUser.ID, tokenRes.AccessToken, sess.Student)
+	err = discord.PerformJoinAndRoleDirect(discordUser.ID, tokenRes.AccessToken, student)
 	if err != nil {
 		log.Printf("⚠️ Chyba při přiřazení rolí na Discordu: %v", err)
 	}
 
 	// 6. Bezpecne ulozeni
-	if err := storage.SaveUser(sess.Student); err != nil {
+	if err := storage.SaveUser(student); err != nil {
 		log.Printf("❌ Chyba při ukládání uživatele: %v", err)
 		http.Error(w, "Chyba při ukládání registrace.", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("🎉 Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", sess.Student.Name, sess.Student.Email, sess.Student.DiscordID)
-	audit.Log(audit.LevelSuccess, "✅ Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", sess.Student.Name, sess.Student.Email, sess.Student.DiscordID))
+	sess.SetStudent(student)
 
-	if config.Cfg.DiscordInviteURL != "" && config.Cfg.DiscordInviteURL != "https://discord.gg/vase-pozvanka" {
+	log.Printf("🎉 Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", student.Name, student.Email, student.DiscordID)
+	audit.Log(audit.LevelSuccess, "✅ Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", student.Name, student.Email, student.DiscordID))
+
+	if isValidDiscordInvite(config.Cfg.DiscordInviteURL) {
 		http.Redirect(w, r, config.Cfg.DiscordInviteURL, http.StatusFound)
 		return
 	}
@@ -324,14 +347,14 @@ func HandleMockMSAL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess := session.GetOrCreate(w, r)
-	sess.Student = &storage.Student{
+	sess.SetStudent(&storage.Student{
 		MicrosoftID: "mock-ms-id-12345",
 		Name:        "Jakub Marcinka",
 		Email:       "jakub.marcinka@tul.cz",
 		Faculty:     "FM",
 		Role:        "Student FM",
 		VerifiedAt:  time.Now(),
-	}
+	})
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -341,8 +364,9 @@ func HandleMockDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess := session.GetOrCreate(w, r)
-	if sess.Student == nil {
-		sess.Student = &storage.Student{
+	student := sess.GetStudent()
+	if student == nil {
+		student = &storage.Student{
 			MicrosoftID: "mock-ms-id-12345",
 			Name:        "Jakub Marcinka",
 			Email:       "jakub.marcinka@tul.cz",
@@ -351,8 +375,9 @@ func HandleMockDiscord(w http.ResponseWriter, r *http.Request) {
 			VerifiedAt:  time.Now(),
 		}
 	}
-	sess.Student.DiscordID = "mock-discord-id-98765"
-	_ = storage.SaveUser(sess.Student)
+	student.DiscordID = "mock-discord-id-98765"
+	_ = storage.SaveUser(student)
+	sess.SetStudent(student)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,14 +32,11 @@ var (
 	usersMux sync.RWMutex
 )
 
-// CheckBindingAllowed zajistuje striktni vazbu 1:1 mezi TUL uctem a Discord uctem
-func CheckBindingAllowed(s *Student) error {
-	usersMux.RLock()
-	defer usersMux.RUnlock()
-
+// checkBindingAllowedLocked ověří pravidla vazby 1:1 uvnitř již zamčeného mutexu
+func checkBindingAllowedLocked(s *Student) error {
 	for _, u := range usersDB {
-		// Stejne Microsoft ID nesmi overit jiny Discord ucet
-		if u.MicrosoftID == s.MicrosoftID && u.DiscordID != s.DiscordID {
+		// Stejne Microsoft ID nebo email nesmi overit jiny Discord ucet
+		if (u.MicrosoftID == s.MicrosoftID || strings.EqualFold(u.Email, s.Email)) && u.DiscordID != s.DiscordID {
 			return fmt.Errorf("tento univerzitní TUL účet (%s) je již spárován s jiným Discord účtem", s.Email)
 		}
 		// Stejny Discord ucet nesmi ziskat jine Microsoft ID
@@ -47,6 +45,13 @@ func CheckBindingAllowed(s *Student) error {
 		}
 	}
 	return nil
+}
+
+// CheckBindingAllowed zajistuje striktni vazbu 1:1 mezi TUL uctem a Discord uctem
+func CheckBindingAllowed(s *Student) error {
+	usersMux.RLock()
+	defer usersMux.RUnlock()
+	return checkBindingAllowedLocked(s)
 }
 
 // LoadUsers nacte stavajici uzivatele z disku
@@ -69,12 +74,12 @@ func LoadUsers() {
 
 // SaveUser provede bezpecny atomicky zapis s pravy 0600
 func SaveUser(s *Student) error {
-	if err := CheckBindingAllowed(s); err != nil {
-		return err
-	}
-
 	usersMux.Lock()
 	defer usersMux.Unlock()
+
+	if err := checkBindingAllowedLocked(s); err != nil {
+		return err
+	}
 
 	usersDB[s.DiscordID] = s
 

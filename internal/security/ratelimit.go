@@ -21,18 +21,27 @@ var (
 	ipLimitsMux sync.Mutex
 )
 
-// GetClientIP extrahuje IP adresu klienta z HTTP pozadavku (reverse proxy aware)
+// GetClientIP extrahuje a validuje IP adresu klienta z HTTP pozadavku (reverse proxy aware)
 func GetClientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
+		candidate := strings.TrimSpace(parts[0])
+		if net.ParseIP(candidate) != nil {
+			return candidate
+		}
 	}
 	if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
-		return strings.TrimSpace(xrip)
+		candidate := strings.TrimSpace(xrip)
+		if net.ParseIP(candidate) != nil {
+			return candidate
+		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		if net.ParseIP(r.RemoteAddr) != nil {
+			return r.RemoteAddr
+		}
+		return "127.0.0.1"
 	}
 	return host
 }

@@ -3,6 +3,8 @@ package security
 import (
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"sbibolet/internal/audit"
@@ -19,8 +21,12 @@ func Middleware(next http.Handler) http.Handler {
 		// Striktní Origin Validace (Ochrana proti Cross-Site Request Forgery nad rámec state tokenu)
 		origin := r.Header.Get("Origin")
 		if origin != "" && config.Cfg.BaseURL != "" {
+			expectedOrigin := strings.TrimRight(config.Cfg.BaseURL, "/")
+			if u, err := url.Parse(config.Cfg.BaseURL); err == nil && u.Host != "" {
+				expectedOrigin = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+			}
 			// Origin musí odpovídat naší BaseURL
-			if origin != config.Cfg.BaseURL {
+			if !strings.EqualFold(origin, expectedOrigin) {
 				audit.Log(audit.LevelDanger, "🛡️ Zablokován CSRF útok", fmt.Sprintf("Neplatná Origin hlavička: `%s`", origin))
 				http.Error(w, "Forbidden: Invalid Origin", http.StatusForbidden)
 				return
