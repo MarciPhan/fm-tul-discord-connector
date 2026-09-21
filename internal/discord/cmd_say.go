@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"sbibolet/internal/audit"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -59,6 +61,8 @@ func (c *CmdSay) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva odeslána do <#%s> (ID: `%s`)", channelID, sentMsg.ID))
 	log.Printf("📢 /say: správce %s odeslal zprávu do kanálu %s", i.Member.User.Username, channelID)
+
+	audit.Log(audit.LevelInfo, "📢 Příkaz /say", fmt.Sprintf("Správce **%s** odeslal zprávu do kanálu <#%s>.\n**Obsah:** %s", i.Member.User.Username, channelID, message))
 }
 
 func init() {

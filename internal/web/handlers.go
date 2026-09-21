@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 	"sbibolet/internal/discord"
 	"sbibolet/internal/security"
@@ -287,6 +288,7 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	// 4. Kontrola striktni vazby 1:1 (Anti-Multi-Accounting)
 	if err := storage.CheckBindingAllowed(sess.Student); err != nil {
 		log.Printf("⛔ Zamítnuto vícenásobné spárování účtu: %v", err)
+		audit.Log(audit.LevelDanger, "⛔ Zablokován Multi-Accounting", fmt.Sprintf("Uživatel **%s** (%s) se pokusil ověřit více Discord účtů.", sess.Student.Name, sess.Student.Email))
 		http.Error(w, fmt.Sprintf("Bezpečnostní omezení: %v", err), http.StatusConflict)
 		return
 	}
@@ -305,6 +307,7 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("🎉 Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", sess.Student.Name, sess.Student.Email, sess.Student.DiscordID)
+	audit.Log(audit.LevelSuccess, "✅ Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", sess.Student.Name, sess.Student.Email, sess.Student.DiscordID))
 
 	if config.Cfg.DiscordInviteURL != "" && config.Cfg.DiscordInviteURL != "https://discord.gg/vase-pozvanka" {
 		http.Redirect(w, r, config.Cfg.DiscordInviteURL, http.StatusFound)

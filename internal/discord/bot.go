@@ -1,8 +1,10 @@
 package discord
 
 import (
+	"fmt"
 	"log"
 
+	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 
 	"github.com/bwmarrin/discordgo"
@@ -42,13 +44,21 @@ func Setup() {
 	// Zpracovani slash prikazu
 	Session.AddHandler(CmdRegistry.HandleInteraction)
 
-	// Textove prikazy (!setup-overeni)
-	Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		HandleSetupCommand(s, m)
-	})
-
 	// Welcome zpravy
 	Session.AddHandler(HandleGuildMemberAdd)
+
+	// Audit Log pro nativni mazani a upravy zprav uzivateli
+	Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageDelete) {
+		audit.Log(audit.LevelWarning, "🗑️ Zpráva smazána", fmt.Sprintf("Byla smazána zpráva s ID `%s` v kanálu <#%s>.", m.ID, m.ChannelID))
+	})
+	Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageUpdate) {
+		if m.Author != nil { // Mame autora z cache
+			audit.Log(audit.LevelInfo, "✏️ Zpráva upravena", fmt.Sprintf("Uživatel **%s** upravil zprávu v kanálu <#%s>.", m.Author.Username, m.ChannelID))
+		}
+	})
+	Session.AddHandler(func(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
+		audit.Log(audit.LevelWarning, "🚪 Uživatel opustil server", fmt.Sprintf("Uživatel **%s** (`%s`) se odpojil ze serveru.", m.User.Username, m.User.ID))
+	})
 
 	// Pripojeni k Discord API
 	err = Session.Open()
@@ -57,13 +67,15 @@ func Setup() {
 		return
 	}
 
-	// Spusteni RSS Workera
+	// Spusteni Workerů
 	StartRSSWorker(Session)
+	StartAuditWorker(Session)
 }
 
 // Close ukonci Discord session
 func Close() {
 	StopRSSWorker()
+	StopAuditWorker()
 	if Session != nil {
 		_ = Session.Close()
 	}

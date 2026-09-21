@@ -2,22 +2,26 @@ package discord
 
 import (
 	"log"
-	"strings"
 
+	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// HandleSetupCommand zpracuje !setup-overeni prikaz pro odeslani overovaciho embedu
-func HandleSetupCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.Bot {
-		return
-	}
-	if strings.TrimSpace(m.Content) != "!setup-overeni" {
-		return
-	}
+// CmdSetup implementuje /setup prikaz pro odeslani overovaci zpravy s tlacitkem
+type CmdSetup struct{}
 
+func (c *CmdSetup) Info() *discordgo.ApplicationCommand {
+	adminPerm := int64(discordgo.PermissionAdministrator)
+	return &discordgo.ApplicationCommand{
+		Name:                     "setup",
+		Description:              "Odešle oficiální ověřovací zprávu s tlačítkem (pouze administrátor)",
+		DefaultMemberPermissions: &adminPerm,
+	}
+}
+
+func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	embed := &discordgo.MessageEmbed{
 		Title: "🎓 Ověření studentů a zaměstnanců FM TUL",
 		Description: "Vítejte na Discord serveru Fakulty mechatroniky, informatiky a mezioborových studií TUL!\n\n" +
@@ -35,7 +39,7 @@ func HandleSetupCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		URL:   config.Cfg.BaseURL,
 	}
 
-	sentMsg, err := s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+	sentMsg, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{embed},
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{
@@ -44,13 +48,23 @@ func HandleSetupCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 		},
 	})
 
-	if err == nil && sentMsg != nil {
-		targetEmoji := config.Cfg.DiscordVerifyEmoji
-		if targetEmoji == "" {
-			targetEmoji = "🎓"
-		}
-		_ = s.MessageReactionAdd(m.ChannelID, sentMsg.ID, targetEmoji)
-		_ = s.ChannelMessageDelete(m.ChannelID, m.ID)
-		log.Printf("📢 Ověřovací zpráva s reakcí %s odeslána do kanálu %s (ID zprávy: %s)", targetEmoji, m.ChannelID, sentMsg.ID)
+	if err != nil {
+		respondEphemeral(s, i, "❌ Chyba při odesílání zprávy.")
+		return
 	}
+
+	targetEmoji := config.Cfg.DiscordVerifyEmoji
+	if targetEmoji == "" {
+		targetEmoji = "🎓"
+	}
+	_ = s.MessageReactionAdd(i.ChannelID, sentMsg.ID, targetEmoji)
+	
+	respondEphemeral(s, i, "✅ Ověřovací zpráva byla odeslána do tohoto kanálu.")
+	
+	log.Printf("📢 /setup: správce %s odeslal ověřovací zprávu (ID: %s)", i.Member.User.Username, sentMsg.ID)
+	audit.Log(audit.LevelInfo, "🛠️ Inicializace serveru", "Správce **"+i.Member.User.Username+"** vytvořil pomocí `/setup` ověřovací bod.")
+}
+
+func init() {
+	CmdRegistry.Register(&CmdSetup{})
 }

@@ -36,13 +36,14 @@ func PerformJoinAndRole(botSession interface{ GetState() string }, discordUserID
 
 	// Urceni roli
 	var rolesToAdd []string
-	if config.Cfg.DiscordVerifiedID != "" {
-		rolesToAdd = append(rolesToAdd, config.Cfg.DiscordVerifiedID)
+	if config.GetVerifiedRoleID() != "" {
+		rolesToAdd = append(rolesToAdd, config.GetVerifiedRoleID())
 	}
-	if student.Role == "Zaměstnanec FM" && config.Cfg.DiscordFMStaffID != "" {
-		rolesToAdd = append(rolesToAdd, config.Cfg.DiscordFMStaffID)
-	} else if config.Cfg.DiscordFMStudentID != "" {
-		rolesToAdd = append(rolesToAdd, config.Cfg.DiscordFMStudentID)
+
+	if student.Role == "Zaměstnanec FM" && config.GetFMStaffRoleID() != "" {
+		rolesToAdd = append(rolesToAdd, config.GetFMStaffRoleID())
+	} else if config.GetFMStudentRoleID() != "" {
+		rolesToAdd = append(rolesToAdd, config.GetFMStudentRoleID())
 	}
 
 	// Bezpecna ocista jmena pro Discord

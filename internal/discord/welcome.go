@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +12,9 @@ import (
 
 // HandleGuildMemberAdd odesle uvitaci zpravu novemu clenu serveru
 func HandleGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
-	channelID := config.Cfg.DiscordWelcomeChannelID
+	audit.Log(audit.LevelInfo, "👋 Nový uživatel na serveru", fmt.Sprintf("Uživatel **%s** (`%s`) se připojil na server.", m.User.Username, m.User.ID))
+
+	channelID := config.GetWelcomeChannelID()
 	if channelID == "" {
 		return // Welcome zprávy nejsou nakonfigurovány
 	}
@@ -21,7 +24,7 @@ func HandleGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		userName = m.Nick
 	}
 
-	welcomeText := config.Cfg.DiscordWelcomeMessage
+	welcomeText := config.GetWelcomeMessage()
 
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("👋 Vítej, %s!", userName),

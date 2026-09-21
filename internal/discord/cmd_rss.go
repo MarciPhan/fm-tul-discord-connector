@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 
 	"github.com/bwmarrin/discordgo"
@@ -282,6 +283,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		feedsMux.Unlock()
 		saveFeeds()
 		respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` úspěšně přidán pro kanál <#%s>. (ID: `%s`)", url, channelID, id))
+		audit.Log(audit.LevelInfo, "📡 RSS přidáno", fmt.Sprintf("Správce **%s** přidal RSS feed `%s` pro kanál <#%s>.", i.Member.User.Username, url, channelID))
 
 	case "list":
 		feedsMux.RLock()
@@ -304,6 +306,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			feedsMux.Unlock()
 			saveFeeds()
 			respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` byl odstraněn.", id))
+			audit.Log(audit.LevelWarning, "📡 RSS odebráno", fmt.Sprintf("Správce **%s** odebral RSS feed s ID `%s`.", i.Member.User.Username, id))
 		} else {
 			feedsMux.Unlock()
 			respondEphemeral(s, i, "❌ Feed s tímto ID nebyl nalezen.")

@@ -16,9 +16,12 @@ Umožňuje bezpečné automatické přiřazování rolí (Student/Zaměstnanec) 
 *   **Automatizace Rolí & Identit:** Automatické přidělení rolí, synchronizace jména a zabezpečení přezdívek proti neviditelným znakům a Pings (`@everyone`).
 *   **RSS Modul (Background Worker):** Automatické stahování novinek z webů TUL/FMTUL a jejich chytré publikování do vybraných Discord kanálů.
 *   **Slash Command Registr:** Plně rozšiřitelný framework pro přidávání administračních příkazů:
+    *   `/setup` – Vytvoří a odešle interaktivní ověřovací zprávu s tlačítkem.
+    *   `/config` – Kompletní dynamická správa konfigurace přímo z Discordu (nastavení rolí, kanálů, uvítací zprávy) bez úprav `.env`.
     *   `/overit` – Soukromé zaslání odkazu na webový portál.
     *   `/say`, `/edit`, `/delete` – Nástroje pro řízení bota z pozice správce.
     *   `/rss add`, `/rss list`, `/rss remove` – Kompletní správa odběrů.
+*   **Asynchronní Audit Log (Velký bratr):** Barevné logování do vyhrazeného kanálu. Sleduje úplně vše: webová přihlášení (kdo, jaký e-mail), bezpečnostní bloky (multi-accounting, rate limity, CSRF), i nativní akce na Discordu (smazání zpráv, odpojení uživatelů).
 *   **Welcome Messages:** Elegantní a plně přizpůsobitelné "Welcome embeds" do vstupní místnosti.
 *   **Vysoká propustnost & Nízké nároky:** Výsledkem buildu je jediná binárka. Žádný Node.js, žádný Python, žádná nutnost spravovat složité SQL servery.
 
@@ -58,7 +61,10 @@ Skript se vás při prvním spuštění automaticky dotáže na vytvoření konf
 
 ## ⚙️ Konfigurace prostředí (`.env`)
 
-Před spuštěním bota je nutné upravit parametry ve vašem `.env` souboru (vycházejte z `.env.example`).
+Před spuštěním bota je nutné upravit základní bezpečnostní parametry ve vašem `.env` souboru. 
+
+> [!TIP]
+> Role, uvítací a auditní kanály a uvítací zprávu už **nemusíte** psát do `.env`. Vše lze nastavit přímo v Discordu pomocí příkazu `/config`. Vytvoří se soubor `discord_config.json`, který má přednost před `.env`.
 
 ### 1. Krypto & Subdoména
 *   `HMAC_SECRET`: Zcela náhodný dlouhý tajný klíč pro podepisování cookies (Nezbytné!).
@@ -73,8 +79,8 @@ Před spuštěním bota je nutné upravit parametry ve vašem `.env` souboru (vy
 ### 3. Discord Modul
 *   `DISCORD_TOKEN`: Token získaný z [Discord Dev Portal](https://discord.com/developers/applications).
 *   `DISCORD_GUILD_ID`: ID vašeho primárního Discord serveru.
-*   `DISCORD_FM_STUDENT_ID` / `DISCORD_FM_STAFF_ID`: ID rolí, jež budou přiděleny.
 *   `RSS_ENABLED`: `true` nebo `false` pro aktivaci stahování novinek.
+*(Poznámka: Proměnné jako `DISCORD_FM_STUDENT_ID` nebo `DISCORD_AUDIT_CHANNEL_ID` fungují jako záloha (fallback), pokud je nenastavíte pohodlněji přímo v Discordu přes `/config`.)*
 
 ---
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"sbibolet/internal/audit"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -78,6 +80,8 @@ func (c *CmdEdit) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva `%s` v <#%s> byla úspěšně upravena.", messageID, channelID))
 	log.Printf("✏️ /edit: správce %s upravil zprávu %s v kanálu %s", i.Member.User.Username, messageID, channelID)
+
+	audit.Log(audit.LevelInfo, "✏️ Příkaz /edit", fmt.Sprintf("Správce **%s** upravil zprávu `%s` v kanálu <#%s>.\n**Nový text:** %s", i.Member.User.Username, messageID, channelID, newText))
 }
 
 func init() {

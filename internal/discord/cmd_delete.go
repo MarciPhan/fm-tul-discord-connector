@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"sbibolet/internal/audit"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -59,6 +61,8 @@ func (c *CmdDelete) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva `%s` v <#%s> byla smazána.", messageID, channelID))
 	log.Printf("🗑️ /delete: správce %s smazal zprávu %s v kanálu %s", i.Member.User.Username, messageID, channelID)
+	
+	audit.Log(audit.LevelInfo, "🗑️ Příkaz /delete", fmt.Sprintf("Správce **%s** smazal zprávu `%s` v kanálu <#%s>.", i.Member.User.Username, messageID, channelID))
 }
 
 func init() {
