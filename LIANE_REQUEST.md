@@ -17,8 +17,8 @@ Aplikace slouží k jednorázovému ověření identity studentů a zaměstnanc�
 - **Typ aplikace:** Webová aplikace (Web Application)
 - **Podporované typy účtů:** Pouze účty v tomto organizačním adresáři (TUL tenant – Single tenant)
 - **Redirect URIs (Reply URLs):**
-  - Vývojové: `http://localhost:8000/callback`
-  - Produkční: `https://[bude_doplneno_pri_nasazeni]/callback`
+  - Vývojové: `http://localhost:8000/msal`
+  - Produkční: `https://[bude_doplneno_pri_nasazeni]/msal`
 
 ### Požadovaná API oprávnění (Microsoft Graph)
 Pro zjištění totožnosti uživatele požadujeme pouze standardní delegovaná oprávnění (Delegated permissions):

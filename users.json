@@ -1,0 +1,20 @@
+[
+  {
+    "microsoft_id": "ms-test-id",
+    "discord_id": "discord-test-id",
+    "name": "Test Student",
+    "email": "test.student@tul.cz",
+    "faculty": "FM",
+    "role": "Student FM",
+    "verified_at": "2026-09-21T13:39:32Z"
+  },
+  {
+    "microsoft_id": "mock-ms-id-12345",
+    "discord_id": "mock-discord-id-98765",
+    "name": "Jakub Marcinka",
+    "email": "jakub.marcinka@tul.cz",
+    "faculty": "FM",
+    "role": "Student FM",
+    "verified_at": "2026-09-21T15:39:32.046940778+02:00"
+  }
+]
