@@ -1,4 +1,4 @@
-# Architektura systému FM TUL ↔ Discord Connector
+# Architektura systému FM TUL - Discord Connector
 
 Dokument popisuje vnitřní architekturu, modulární členění a toky dat aplikace `sbibolet` (FM TUL Discord Bridge).
 

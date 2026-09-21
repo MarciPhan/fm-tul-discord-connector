@@ -39,9 +39,9 @@ func Setup() {
 	}
 
 	go func() {
-		log.Printf("🚀 FM TUL Discord Connector běží na %s (lokálně: http://%s)", config.Cfg.BaseURL, addr)
+		log.Printf("FM TUL Discord Connector běží na %s (lokálně: http://%s)", config.Cfg.BaseURL, addr)
 		if err := Server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("❌ Chyba HTTP serveru: %v", err)
+			log.Fatalf("Chyba HTTP serveru: %v", err)
 		}
 	}()
 }

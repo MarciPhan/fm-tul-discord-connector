@@ -21,9 +21,9 @@ func (c *CmdVerify) Info() *discordgo.ApplicationCommand {
 func (c *CmdVerify) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	userID := GetInteractionUserID(i)
 	embed := &discordgo.MessageEmbed{
-		Title: "🎓 Ověření identity FM TUL",
+		Title: "Ověření identity FM TUL",
 		Description: fmt.Sprintf(
-			"Ahoj <@%s>,\n\nPro získání přístupu a rolí na Discordu FM TUL se prosím ověř přes náš webový konektor:\n\n👉 **%s**\n\n1. Přihlásíš se školním Microsoft účtem (`@tul.cz`)\n2. Propojíš svůj Discord účet",
+			"Ahoj <@%s>,\n\nPro získání přístupu a rolí na Discordu FM TUL se prosím ověř přes náš webový konektor:\n\n**%s**\n\n1. Přihlásíš se školním Microsoft účtem (`@tul.cz`)\n2. Propojíš svůj Discord účet",
 			userID,
 			config.Cfg.BaseURL,
 		),

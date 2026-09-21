@@ -1,6 +1,6 @@
 # FM TUL Connector – AI Context Snapshot
 
-*Generated at: 2026-09-21T14:39:55Z*
+*Generated at: 2026-09-21T14:42:46Z*
 
 ## Core Invariants for AI Agents
 1. Storage: Zero external SQL/Redis. Atomic JSON writes only (`users.json`, `feeds.json`, `discord_config.json`) with `0600` permissions.

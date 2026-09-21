@@ -48,22 +48,22 @@ func (c *CmdSay) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if channelID == "" || message == "" {
-		respondEphemeral(s, i, "❌ Musíš zadat kanál i zprávu.")
+		respondEphemeral(s, i, "Musíš zadat kanál i zprávu.")
 		return
 	}
 
 	sentMsg, err := s.ChannelMessageSend(channelID, message)
 	if err != nil {
-		log.Printf("⚠️ /say chyba: %v", err)
-		respondEphemeral(s, i, fmt.Sprintf("❌ Nepodařilo se odeslat zprávu: %v", err))
+		log.Printf("/say chyba: %v", err)
+		respondEphemeral(s, i, fmt.Sprintf("Nepodařilo se odeslat zprávu: %v", err))
 		return
 	}
 
 	username := GetInteractionUsername(i)
-	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva odeslána do <#%s> (ID: `%s`)", channelID, sentMsg.ID))
-	log.Printf("📢 /say: správce %s odeslal zprávu do kanálu %s", username, channelID)
+	respondEphemeral(s, i, fmt.Sprintf("Zpráva odeslána do <#%s> (ID: `%s`)", channelID, sentMsg.ID))
+	log.Printf("/say: správce %s odeslal zprávu do kanálu %s", username, channelID)
 
-	audit.Log(audit.LevelInfo, "📢 Příkaz /say", fmt.Sprintf("Správce **%s** odeslal zprávu do kanálu <#%s>.\n**Obsah:** %s", username, channelID, message))
+	audit.Log(audit.LevelInfo, "Příkaz /say", fmt.Sprintf("Správce **%s** odeslal zprávu do kanálu <#%s>.\n**Obsah:** %s", username, channelID, message))
 }
 
 func init() {

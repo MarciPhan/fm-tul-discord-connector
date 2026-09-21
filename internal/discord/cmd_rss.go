@@ -71,7 +71,7 @@ func loadFeeds() {
 		for _, f := range list {
 			feedsDB[f.ID] = f
 		}
-		log.Printf("📰 Načteno %d RSS feedů.", len(list))
+		log.Printf("Načteno %d RSS feedů.", len(list))
 	}
 }
 
@@ -86,7 +86,7 @@ func saveFeeds() {
 
 	data, err := json.MarshalIndent(list, "", "  ")
 	if err != nil {
-		log.Printf("⚠️ RSS save error: %v", err)
+		log.Printf("RSS save error: %v", err)
 		return
 	}
 	tmpFile, err := os.CreateTemp(".", "feeds_*.tmp")
@@ -118,7 +118,7 @@ func StartRSSWorker(s *discordgo.Session) {
 	stopRSSChan = make(chan struct{})
 
 	go func() {
-		log.Println("🔄 RSS Worker spuštěn.")
+		log.Println("RSS Worker spuštěn.")
 		// Okamžitá první kontrola (volitelně, raději počkáme na první tik nebo uděláme hned)
 		checkAllFeeds(s)
 
@@ -127,7 +127,7 @@ func StartRSSWorker(s *discordgo.Session) {
 			case <-rssTicker.C:
 				checkAllFeeds(s)
 			case <-stopRSSChan:
-				log.Println("🛑 RSS Worker zastaven.")
+				log.Println("RSS Worker zastaven.")
 				return
 			}
 		}
@@ -167,7 +167,7 @@ func checkAllFeeds(s *discordgo.Session) {
 	for _, feedEntry := range entries {
 		feed, err := fp.ParseURL(feedEntry.URL)
 		if err != nil {
-			log.Printf("⚠️ RSS chyba načítání %s: %v", feedEntry.URL, err)
+			log.Printf("RSS chyba načítání %s: %v", feedEntry.URL, err)
 			continue
 		}
 
@@ -192,7 +192,7 @@ func checkAllFeeds(s *discordgo.Session) {
 			if feedEntry.LastGuid != "" { // Neodesílat při prvním načtení feedu celou historii, jen si uložit první GUID
 				sendRSSUpdate(s, feedEntry.ChannelID, feed.Title, latestItem)
 			} else {
-				log.Printf("📰 RSS Inicializováno: %s", feedEntry.URL)
+				log.Printf("RSS Inicializováno: %s", feedEntry.URL)
 			}
 			updates[feedEntry.ID] = guid
 		}
@@ -233,9 +233,9 @@ func sendRSSUpdate(s *discordgo.Session, channelID, sourceName string, item *gof
 
 	_, err := s.ChannelMessageSendEmbed(channelID, embed)
 	if err != nil {
-		log.Printf("⚠️ RSS Send error to %s: %v", channelID, err)
+		log.Printf("RSS Send error to %s: %v", channelID, err)
 	} else {
-		log.Printf("📢 RSS odesláno: %s do %s", item.Title, channelID)
+		log.Printf("RSS odesláno: %s do %s", item.Title, channelID)
 	}
 }
 
@@ -293,7 +293,7 @@ func (c *CmdRSS) Info() *discordgo.ApplicationCommand {
 
 func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !config.Cfg.RSSEnabled {
-		respondEphemeral(s, i, "❌ RSS modul není povolen. Změň RSS_ENABLED v .env.")
+		respondEphemeral(s, i, "RSS modul není povolen. Změň RSS_ENABLED v .env.")
 		return
 	}
 
@@ -318,7 +318,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 
 		if err := isValidRSSURL(url); err != nil {
-			respondEphemeral(s, i, fmt.Sprintf("❌ Neplatná nebo nepovolená URL feedu: %v", err))
+			respondEphemeral(s, i, fmt.Sprintf("Neplatná nebo nepovolená URL feedu: %v", err))
 			return
 		}
 
@@ -328,7 +328,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		fp.Client = client
 		_, err := fp.ParseURL(url)
 		if err != nil {
-			respondEphemeral(s, i, fmt.Sprintf("❌ Chyba načtení RSS feedu (je adresa správná?): %v", err))
+			respondEphemeral(s, i, fmt.Sprintf("Chyba načtení RSS feedu (je adresa správná?): %v", err))
 			return
 		}
 
@@ -343,14 +343,14 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		}
 		feedsMux.Unlock()
 		saveFeeds()
-		respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` úspěšně přidán pro kanál <#%s>. (ID: `%s`)", url, channelID, id))
-		audit.Log(audit.LevelInfo, "📡 RSS přidáno", fmt.Sprintf("Správce **%s** přidal RSS feed `%s` pro kanál <#%s>.", username, url, channelID))
+		respondEphemeral(s, i, fmt.Sprintf("RSS feed `%s` úspěšně přidán pro kanál <#%s>. (ID: `%s`)", url, channelID, id))
+		audit.Log(audit.LevelInfo, "RSS přidáno", fmt.Sprintf("Správce **%s** přidal RSS feed `%s` pro kanál <#%s>.", username, url, channelID))
 
 	case "list":
 		feedsMux.RLock()
 		defer feedsMux.RUnlock()
 		if len(feedsDB) == 0 {
-			respondEphemeral(s, i, "📭 Nejsou sledovány žádné RSS feedy.")
+			respondEphemeral(s, i, "Nejsou sledovány žádné RSS feedy.")
 			return
 		}
 		msg := "**Sledované RSS feedy:**\n"
@@ -366,11 +366,11 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			delete(feedsDB, id)
 			feedsMux.Unlock()
 			saveFeeds()
-			respondEphemeral(s, i, fmt.Sprintf("✅ RSS feed `%s` byl odstraněn.", id))
-			audit.Log(audit.LevelWarning, "📡 RSS odebráno", fmt.Sprintf("Správce **%s** odebral RSS feed s ID `%s`.", username, id))
+			respondEphemeral(s, i, fmt.Sprintf("RSS feed `%s` byl odstraněn.", id))
+			audit.Log(audit.LevelWarning, "RSS odebráno", fmt.Sprintf("Správce **%s** odebral RSS feed s ID `%s`.", username, id))
 		} else {
 			feedsMux.Unlock()
-			respondEphemeral(s, i, "❌ Feed s tímto ID nebyl nalezen.")
+			respondEphemeral(s, i, "Feed s tímto ID nebyl nalezen.")
 		}
 	}
 }

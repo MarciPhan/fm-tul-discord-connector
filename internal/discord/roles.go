@@ -51,7 +51,7 @@ func PerformJoinAndRole(botSession interface{ GetState() string }, discordUserID
 
 	if resp.StatusCode == http.StatusNotFound {
 		// Uzivatel neni na serveru -> Pridame ho pres PUT s OAuth2 access tokenem (guilds.join scope)
-		log.Printf("➕ Uživatel %s není na serveru, přidávám přes guilds.join...", discordUserID)
+		log.Printf("Uživatel %s není na serveru, přidávám přes guilds.join...", discordUserID)
 
 		payload := map[string]interface{}{
 			"access_token": userAccessToken,
@@ -71,7 +71,7 @@ func PerformJoinAndRole(botSession interface{ GetState() string }, discordUserID
 			return putErr
 		}
 		defer putResp.Body.Close()
-		log.Printf("✅ Uživatel přidán na server (status: %d)", putResp.StatusCode)
+		log.Printf("Uživatel přidán na server (status: %d)", putResp.StatusCode)
 		return nil
 	}
 

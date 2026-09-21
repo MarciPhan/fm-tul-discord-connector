@@ -30,7 +30,7 @@ func NewRegistry() *Registry {
 func (reg *Registry) Register(cmd Command) {
 	name := cmd.Info().Name
 	reg.commands[name] = cmd
-	log.Printf("📋 Registrován příkaz: /%s", name)
+	log.Printf("Registrován příkaz: /%s", name)
 }
 
 // SyncWithGuild synchronizuje registrovane prikazy s Discord guildem
@@ -38,10 +38,10 @@ func (reg *Registry) SyncWithGuild(s *discordgo.Session, guildID string) {
 	for _, cmd := range reg.commands {
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, guildID, cmd.Info())
 		if err != nil {
-			log.Printf("⚠️ Chyba registrace příkazu /%s: %v", cmd.Info().Name, err)
+			log.Printf("Chyba registrace příkazu /%s: %v", cmd.Info().Name, err)
 		}
 	}
-	log.Printf("✅ Synchronizováno %d příkazů s guildem", len(reg.commands))
+	log.Printf("Synchronizováno %d příkazů s guildem", len(reg.commands))
 }
 
 // HandleInteraction nasmeruje interakci na spravny handler

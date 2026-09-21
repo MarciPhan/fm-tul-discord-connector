@@ -68,7 +68,7 @@ func LoadUsers() {
 		for _, u := range list {
 			usersDB[u.DiscordID] = u
 		}
-		log.Printf("📂 Načteno %d ověřených uživatelů z %s", len(list), UsersStorageFile)
+		log.Printf("Načteno %d ověřených uživatelů z %s", len(list), UsersStorageFile)
 	}
 }
 

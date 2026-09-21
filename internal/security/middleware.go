@@ -27,7 +27,7 @@ func Middleware(next http.Handler) http.Handler {
 			}
 			// Origin musí odpovídat naší BaseURL
 			if !strings.EqualFold(origin, expectedOrigin) {
-				audit.Log(audit.LevelDanger, "🛡️ Zablokován CSRF útok", fmt.Sprintf("Neplatná Origin hlavička: `%s`", origin))
+				audit.Log(audit.LevelDanger, "Zablokován CSRF útok", fmt.Sprintf("Neplatná Origin hlavička: `%s`", origin))
 				http.Error(w, "Forbidden: Invalid Origin", http.StatusForbidden)
 				return
 			}
@@ -36,7 +36,7 @@ func Middleware(next http.Handler) http.Handler {
 		ip := GetClientIP(r)
 		// Max 60 pozadavku za minutu na IP pro cele rozhrani
 		if !CheckRateLimit(ip, 60, time.Minute) {
-			audit.Log(audit.LevelWarning, "🐌 Rate Limit překročen", fmt.Sprintf("IP adresa `%s` odeslala příliš mnoho požadavků.", ip))
+			audit.Log(audit.LevelWarning, "Rate Limit překročen", fmt.Sprintf("IP adresa `%s` odeslala příliš mnoho požadavků.", ip))
 			w.Header().Set("Retry-After", "60")
 			http.Error(w, "Příliš mnoho požadavků (Rate limit překročen). Zkuste to za chvíli.", http.StatusTooManyRequests)
 			return

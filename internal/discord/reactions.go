@@ -71,20 +71,20 @@ func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	reactionCooldowns[r.UserID] = now
 	reactionCooldownsMux.Unlock()
 
-	log.Printf("🔔 Uživatel %s kliknul na reakci %s na zprávě %s", r.UserID, emojiName, r.MessageID)
+	log.Printf("Uživatel %s kliknul na reakci %s na zprávě %s", r.UserID, emojiName, r.MessageID)
 
 	dmChannel, err := s.UserChannelCreate(r.UserID)
 	if err != nil {
-		log.Printf("⚠️ Nepodařilo se otevřít DM pro %s: %v", r.UserID, err)
+		log.Printf("Nepodařilo se otevřít DM pro %s: %v", r.UserID, err)
 		return
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title: "🎓 Ověření identity FM TUL",
+		Title: "Ověření identity FM TUL",
 		Description: fmt.Sprintf(
 			"Ahoj!\n\nKliknul jsi na reakci pro ověření identity na Discord serveru **FM TUL**.\n\n"+
 				"Pro propojení účtu a automatické získání rolí klikni na odkaz níže:\n\n"+
-				"👉 **%s**\n\n"+
+				"**%s**\n\n"+
 				"1. Přihlásíš se školním Microsoft účtem (`@tul.cz`)\n"+
 				"2. Propojíš svůj Discord účet a role ti budou okamžitě přiděleny na serveru.",
 			config.Cfg.BaseURL,
@@ -108,7 +108,7 @@ func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	})
 
 	if sendErr != nil {
-		log.Printf("⚠️ Nelze odeslat DM uživateli %s: %v", r.UserID, sendErr)
+		log.Printf("Nelze odeslat DM uživateli %s: %v", r.UserID, sendErr)
 		tmpMsg, _ := s.ChannelMessageSend(r.ChannelID, fmt.Sprintf("<@%s> Chtěl jsem ti poslat odkaz k ověření, ale máš zablokované soukromé zprávy (DM). Povol si prosím příjem DM od členů serveru, nebo přejdi přímo na: %s", r.UserID, config.Cfg.BaseURL))
 		if tmpMsg != nil {
 			go func(cID, mID string) {

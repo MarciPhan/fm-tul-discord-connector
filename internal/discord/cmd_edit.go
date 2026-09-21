@@ -56,33 +56,33 @@ func (c *CmdEdit) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	if channelID == "" || messageID == "" || newText == "" {
-		respondEphemeral(s, i, "❌ Musíš zadat kanál, ID zprávy i nový text.")
+		respondEphemeral(s, i, "Musíš zadat kanál, ID zprávy i nový text.")
 		return
 	}
 
 	// Overime, ze zprava patri botovi
 	msg, err := s.ChannelMessage(channelID, messageID)
 	if err != nil {
-		respondEphemeral(s, i, fmt.Sprintf("❌ Zprávu `%s` nelze najít v kanálu <#%s>.", messageID, channelID))
+		respondEphemeral(s, i, fmt.Sprintf("Zprávu `%s` nelze najít v kanálu <#%s>.", messageID, channelID))
 		return
 	}
 	if msg.Author.ID != s.State.User.ID {
-		respondEphemeral(s, i, "❌ Tuto zprávu bot nemůže upravit – není její autor.")
+		respondEphemeral(s, i, "Tuto zprávu bot nemůže upravit – není její autor.")
 		return
 	}
 
 	_, err = s.ChannelMessageEdit(channelID, messageID, newText)
 	if err != nil {
-		log.Printf("⚠️ /edit chyba: %v", err)
-		respondEphemeral(s, i, fmt.Sprintf("❌ Nepodařilo se upravit zprávu: %v", err))
+		log.Printf("/edit chyba: %v", err)
+		respondEphemeral(s, i, fmt.Sprintf("Nepodařilo se upravit zprávu: %v", err))
 		return
 	}
 
 	username := GetInteractionUsername(i)
-	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva `%s` v <#%s> byla úspěšně upravena.", messageID, channelID))
-	log.Printf("✏️ /edit: správce %s upravil zprávu %s v kanálu %s", username, messageID, channelID)
+	respondEphemeral(s, i, fmt.Sprintf("Zpráva `%s` v <#%s> byla úspěšně upravena.", messageID, channelID))
+	log.Printf("/edit: správce %s upravil zprávu %s v kanálu %s", username, messageID, channelID)
 
-	audit.Log(audit.LevelInfo, "✏️ Příkaz /edit", fmt.Sprintf("Správce **%s** upravil zprávu `%s` v kanálu <#%s>.\n**Nový text:** %s", username, messageID, channelID, newText))
+	audit.Log(audit.LevelInfo, "Příkaz /edit", fmt.Sprintf("Správce **%s** upravil zprávu `%s` v kanálu <#%s>.\n**Nový text:** %s", username, messageID, channelID, newText))
 }
 
 func init() {

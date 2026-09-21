@@ -29,7 +29,7 @@ Getter funkce (např. `config.GetAuditChannelID()`) nejprve zkontrolují příto
 | `DISCORD_FM_STUDENT_ID` | String | `""` | ID role pro studenty FM TUL (fallback). |
 | `DISCORD_FM_STAFF_ID` | String | `""` | ID role pro zaměstnance FM TUL (fallback). |
 | `DISCORD_INVITE_URL` | String | `""` | Cílová Discord pozvánka po úspěšném ověření. |
-| `DISCORD_VERIFY_EMOJI` | String | `🎓` | Emoji použité pro reakční ověřování. |
+| `DISCORD_VERIFY_EMOJI` | String | `""` | Emoji použité pro reakční ověřování. |
 | `DISCORD_AUDIT_CHANNEL_ID` | String | `""` | Kanál pro odesílání bezpečnostního auditu (fallback). |
 | `DISCORD_WELCOME_CHANNEL_ID` | String | `""` | Kanál pro uvítací zprávy nováčků (fallback). |
 | `DISCORD_WELCOME_MESSAGE` | String | Přednastavená | Výchozí text uvítací zprávy. |

@@ -1,8 +1,8 @@
 # Knowledge Base Index – FM TUL Discord Connector
 
-*Automaticky vygenerováno: 2026-09-21 16:39:55 CEST*
+*Automaticky vygenerováno: 2026-09-21 16:42:46 CEST*
 
-## 📚 Dokumentace v Knowledge Base
+## Dokumentace v Knowledge Base
 
 - [Architektura systému](architecture.md) – Moduly, toky dat, background workery.
 - [Bezpečnostní model](security.md) – HMAC sessions, PKCE, Origin validace, anti-multi-accounting, SSRF ochrana.
@@ -11,7 +11,7 @@
 - [Konfigurace](config-reference.md) – Kompletní matice proměnných `.env` a `discord_config.json`.
 - [AI Context Snapshot](AI_CONTEXT.md) – Kompaktní přehled projektu pro rychlé načtení do kontextu AI.
 
-## 📊 Metriky projektu
+## Metriky projektu
 
 - **Celkem zdrojových Go souborů:** 32
 - **Testovací soubory:** 6
@@ -19,7 +19,7 @@
 - **Aktivních Slash příkazů a podpříkazů:** 12
 - **Aktivních HTTP endpointů:** 6
 
-## 🤖 Slash Příkazy v repozitáři
+## Slash Příkazy v repozitáři
 
 | Příkaz | Oprávnění | Popis | Zdrojový soubor |
 | :--- | :--- | :--- | :--- |
@@ -36,7 +36,7 @@
 | `/say` | Správa zpráv | Bot odešle zprávu do zvoleného kanálu (pouze pro správce) | `internal/discord/cmd_say.go` |
 | `/setup` | Administrátor | Odešle oficiální ověřovací zprávu s tlačítkem (pouze administrátor) | `internal/discord/cmd_setup.go` |
 
-## 🌐 HTTP Endpointy (`internal/web/server.go`)
+## HTTP Endpointy (`internal/web/server.go`)
 
 | Metoda | Cesta | Handler |
 | :--- | :--- | :--- |

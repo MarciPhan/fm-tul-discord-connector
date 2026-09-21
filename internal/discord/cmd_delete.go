@@ -48,22 +48,22 @@ func (c *CmdDelete) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 	}
 
 	if channelID == "" || messageID == "" {
-		respondEphemeral(s, i, "❌ Musíš zadat kanál i ID zprávy.")
+		respondEphemeral(s, i, "Musíš zadat kanál i ID zprávy.")
 		return
 	}
 
 	err := s.ChannelMessageDelete(channelID, messageID)
 	if err != nil {
-		log.Printf("⚠️ /delete chyba: %v", err)
-		respondEphemeral(s, i, fmt.Sprintf("❌ Nepodařilo se smazat zprávu: %v", err))
+		log.Printf("/delete chyba: %v", err)
+		respondEphemeral(s, i, fmt.Sprintf("Nepodařilo se smazat zprávu: %v", err))
 		return
 	}
 
 	username := GetInteractionUsername(i)
-	respondEphemeral(s, i, fmt.Sprintf("✅ Zpráva `%s` v <#%s> byla smazána.", messageID, channelID))
-	log.Printf("🗑️ /delete: správce %s smazal zprávu %s v kanálu %s", username, messageID, channelID)
+	respondEphemeral(s, i, fmt.Sprintf("Zpráva `%s` v <#%s> byla smazána.", messageID, channelID))
+	log.Printf("/delete: správce %s smazal zprávu %s v kanálu %s", username, messageID, channelID)
 	
-	audit.Log(audit.LevelInfo, "🗑️ Příkaz /delete", fmt.Sprintf("Správce **%s** smazal zprávu `%s` v kanálu <#%s>.", username, messageID, channelID))
+	audit.Log(audit.LevelInfo, "Příkaz /delete", fmt.Sprintf("Správce **%s** smazal zprávu `%s` v kanálu <#%s>.", username, messageID, channelID))
 }
 
 func init() {

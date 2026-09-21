@@ -37,13 +37,13 @@ func LoadDynamic() {
 	data, err := os.ReadFile(ConfigFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.Printf("⚠️ Nelze načíst %s: %v", ConfigFile, err)
+			log.Printf("Nelze načíst %s: %v", ConfigFile, err)
 		}
 		return // Soubor neexistuje, nevadi
 	}
 
 	if err := json.Unmarshal(data, &DynCfg); err != nil {
-		log.Printf("⚠️ Chyba parsování %s: %v", ConfigFile, err)
+		log.Printf("Chyba parsování %s: %v", ConfigFile, err)
 	}
 }
 

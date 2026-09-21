@@ -122,7 +122,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 	reqState := r.URL.Query().Get("state")
 	verifier, ok := sess.ConsumeMSALState(reqState)
 	if !ok {
-		log.Printf("🚨 Bezpečnostní varování: Neplatný MSAL state parametr od IP %s", ip)
+		log.Printf("Bezpečnostní varování: Neplatný MSAL state parametr od IP %s", ip)
 		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok nebo opakovaný požadavek).", http.StatusForbidden)
 		return
 	}
@@ -157,7 +157,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.PostForm(tokenURL, form)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Printf("⚠️ MSAL Token error: status %v, err: %v", resp, err)
+		log.Printf("MSAL Token error: status %v, err: %v", resp, err)
 		http.Error(w, "Chyba při ověřování přihlášení u Microsoft TUL.", http.StatusBadGateway)
 		return
 	}
@@ -204,7 +204,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Striktni validace univerzitni domeny TUL
 	if !security.IsValidTULEmail(email) {
-		log.Printf("⛔ Zamítnuto neoprávněné přihlášení s emailem: %s", email)
+		log.Printf("Zamítnuto neoprávněné přihlášení s emailem: %s", email)
 		http.Error(w, "Přístup povolen pouze s univerzitním účtem TUL (@tul.cz).", http.StatusForbidden)
 		return
 	}
@@ -246,7 +246,7 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	// 1. Striktni validace CSRF state parametru s atomickym spotrebovanim
 	reqState := r.URL.Query().Get("state")
 	if !sess.ConsumeDiscordState(reqState) {
-		log.Printf("🚨 Bezpečnostní varování: Neplatný Discord state parametr od IP %s", ip)
+		log.Printf("Bezpečnostní varování: Neplatný Discord state parametr od IP %s", ip)
 		http.Error(w, "Neplatný bezpečnostní token (možný pokus o CSRF útok nebo opakovaný požadavek).", http.StatusForbidden)
 		return
 	}
@@ -274,7 +274,7 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.PostForm("https://discord.com/api/v10/oauth2/token", form)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Printf("⚠️ Discord OAuth token exchange selhal: %v", err)
+		log.Printf("Discord OAuth token exchange selhal: %v", err)
 		http.Error(w, "Chyba při komunikaci s Discord OAuth.", http.StatusBadGateway)
 		return
 	}
@@ -308,8 +308,8 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Kontrola striktni vazby 1:1 (Anti-Multi-Accounting)
 	if err := storage.CheckBindingAllowed(student); err != nil {
-		log.Printf("⛔ Zamítnuto vícenásobné spárování účtu: %v", err)
-		audit.Log(audit.LevelDanger, "⛔ Zablokován Multi-Accounting", fmt.Sprintf("Uživatel **%s** (%s) se pokusil ověřit více Discord účtů.", student.Name, student.Email))
+		log.Printf("Zamítnuto vícenásobné spárování účtu: %v", err)
+		audit.Log(audit.LevelDanger, "Zablokován Multi-Accounting", fmt.Sprintf("Uživatel **%s** (%s) se pokusil ověřit více Discord účtů.", student.Name, student.Email))
 		http.Error(w, fmt.Sprintf("Bezpečnostní omezení: %v", err), http.StatusConflict)
 		return
 	}
@@ -317,20 +317,20 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	// 5. Automaticke pripojeni na server a prirazeni roli
 	err = discord.PerformJoinAndRoleDirect(discordUser.ID, tokenRes.AccessToken, student)
 	if err != nil {
-		log.Printf("⚠️ Chyba při přiřazení rolí na Discordu: %v", err)
+		log.Printf("Chyba při přiřazení rolí na Discordu: %v", err)
 	}
 
 	// 6. Bezpecne ulozeni
 	if err := storage.SaveUser(student); err != nil {
-		log.Printf("❌ Chyba při ukládání uživatele: %v", err)
+		log.Printf("Chyba při ukládání uživatele: %v", err)
 		http.Error(w, "Chyba při ukládání registrace.", http.StatusInternalServerError)
 		return
 	}
 
 	sess.SetStudent(student)
 
-	log.Printf("🎉 Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", student.Name, student.Email, student.DiscordID)
-	audit.Log(audit.LevelSuccess, "✅ Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", student.Name, student.Email, student.DiscordID))
+	log.Printf("Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", student.Name, student.Email, student.DiscordID)
+	audit.Log(audit.LevelSuccess, "Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", student.Name, student.Email, student.DiscordID))
 
 	if isValidDiscordInvite(config.Cfg.DiscordInviteURL) {
 		http.Redirect(w, r, config.Cfg.DiscordInviteURL, http.StatusFound)
@@ -394,7 +394,7 @@ const indexTemplate = `
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>FM TUL ↔ Discord Connector</title>
+		<title>FM TUL - Discord Connector</title>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 		<style>
 			* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
@@ -452,7 +452,7 @@ const indexTemplate = `
 				<!-- KROK 2: PŘIHLÁŠENÍ DISCORD -->
 				<div class="info-box">
 					<div class="info-label">Ověřený školní účet</div>
-					<div class="info-value">✓ {{.Session.Name}} ({{.Session.Email}})</div>
+					<div class="info-value">{{.Session.Name}} ({{.Session.Email}})</div>
 					<div style="color: #38bdf8; font-size: 13px; margin-top: 4px;">{{.Session.Role}}</div>
 				</div>
 
@@ -466,13 +466,13 @@ const indexTemplate = `
 				<!-- KROK 3: HOTOVO -->
 				<div class="info-box" style="border-left: 4px solid #10b981;">
 					<div class="info-label">Úspěšně propojeno a ověřeno</div>
-					<div class="info-value">✓ {{.Session.Name}}</div>
+					<div class="info-value">{{.Session.Name}}</div>
 					<div style="color: #38bdf8; font-size: 13px; margin-top: 4px;">Role: {{.Session.Role}}</div>
 					<div style="color: #94a3b8; font-size: 13px; margin-top: 2px;">Role na Discordu byly automaticky uděleny.</div>
 				</div>
 
 				<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn btn-success">
-					Přejít na Discord Server 🚀
+					Přejít na Discord Server
 				</a>
 			{{end}}
 

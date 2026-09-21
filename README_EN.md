@@ -1,4 +1,4 @@
-# FM TUL ↔ Discord Connector 🎓
+# FM TUL - Discord Connector
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Build & Tests](https://img.shields.io/badge/Tests-Passing-22c55e.svg)](https://github.com/Mapetr/discord-pslib-connector)
@@ -17,23 +17,23 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
-1. [Overview](#-overview)
-2. [Architecture & Data Flow](#-architecture--data-flow)
-3. [Key Features](#-key-features)
-4. [Security Architecture (Defense-in-Depth)](#-security-architecture-defense-in-depth)
-5. [Installation & Quick Start](#-installation--quick-start)
-6. [Configuration Reference](#-configuration-reference)
-7. [Slash Commands Catalog](#-slash-commands-catalog)
-8. [Production Deployment (systemd & Nginx)](#-production-deployment-systemd--nginx)
-9. [Testing & Quality Assurance](#-testing--quality-assurance)
-10. [AI Development & Knowledge Base](#-ai-development--knowledge-base)
-11. [License](#-license)
+1. [Overview](#overview)
+2. [Architecture & Data Flow](#architecture--data-flow)
+3. [Key Features](#key-features)
+4. [Security Architecture (Defense-in-Depth)](#security-architecture-defense-in-depth)
+5. [Installation & Quick Start](#installation--quick-start)
+6. [Configuration Reference](#configuration-reference)
+7. [Slash Commands Catalog](#slash-commands-catalog)
+8. [Production Deployment (systemd & Nginx)](#production-deployment-systemd--nginx)
+9. [Testing & Quality Assurance](#testing--quality-assurance)
+10. [AI Development & Knowledge Base](#ai-development--knowledge-base)
+11. [License](#license)
 
 ---
 
-## 💡 Overview
+## Overview
 
 The FM TUL Discord Connector provides an automated, secure verification portal for university students and staff entering a community Discord guild.
 
@@ -45,7 +45,7 @@ The FM TUL Discord Connector provides an automated, secure verification portal f
 
 ---
 
-## 🏗️ Architecture & Data Flow
+## Architecture & Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -74,7 +74,7 @@ sequenceDiagram
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 - **Automated Role Provisioning:** Maps Microsoft Graph profile attributes into Discord roles (`Student FM`, `Zaměstnanec FM`, `Ověřený`).
 - **Nickname Sanitization:** Sets the member's server nickname based on official university records while stripping control characters, zero-width spaces, and ping exploits (`@everyone`, `@here`, `<@`).
@@ -85,7 +85,7 @@ sequenceDiagram
 
 ---
 
-## 🛡️ Security Architecture (Defense-in-Depth)
+## Security Architecture (Defense-in-Depth)
 
 Engineered from the ground up to meet stringent university cybersecurity requirements:
 
@@ -104,7 +104,7 @@ Engineered from the ground up to meet stringent university cybersecurity require
 
 ---
 
-## 🚀 Installation & Quick Start
+## Installation & Quick Start
 
 ### Prerequisites
 - [Go 1.21+](https://go.dev/dl/) or newer
@@ -133,7 +133,7 @@ scripts\start.bat
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 The application uses a **hybrid configuration system**:
 1. **Dynamic Configuration:** Saved in `discord_config.json` via `/config`. Overrides static defaults on the fly.
@@ -171,7 +171,7 @@ ENABLE_DEV_MOCK="false"
 
 ---
 
-## 🤖 Slash Commands Catalog
+## Slash Commands Catalog
 
 All administrative and user interactions are handled via native Discord Slash Commands:
 
@@ -194,7 +194,7 @@ All administrative and user interactions are handled via native Discord Slash Co
 
 ---
 
-## 🌐 Production Deployment (systemd & Nginx)
+## Production Deployment (systemd & Nginx)
 
 ### 1. Build Production Binary
 ```bash
@@ -241,7 +241,7 @@ server {
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 The codebase includes comprehensive unit and integration tests with continuous race condition detection:
 
@@ -257,7 +257,7 @@ go test -v -race -count=1 ./...
 
 ---
 
-## 🧠 AI Development & Knowledge Base
+## AI Development & Knowledge Base
 
 This project provides comprehensive documentation designed to assist both human engineers and AI coding assistants (Antigravity, Cursor, Copilot, Claude):
 
@@ -279,7 +279,7 @@ The script analyzes the Go AST, regenerates `SUMMARY.md` and `AI_CONTEXT.md`, an
 
 ---
 
-## 📄 License
+## License
 
 Licensed under the **MIT License**. See LICENSE file for details.
 

@@ -89,7 +89,7 @@ func Load() {
 		DiscordAuditChannelID:  os.Getenv("DISCORD_AUDIT_CHANNEL_ID"),
 
 		DiscordWelcomeChannelID: os.Getenv("DISCORD_WELCOME_CHANNEL_ID"),
-		DiscordWelcomeMessage:   getEnvOr("DISCORD_WELCOME_MESSAGE", "Vítej na serveru FM TUL! 🎓 Pro ověření identity klikni na reakci 🎓 v kanálu #overeni."),
+		DiscordWelcomeMessage:   getEnvOr("DISCORD_WELCOME_MESSAGE", "Vítej na serveru FM TUL! Pro ověření identity klikni na reakci v kanálu #overeni."),
 
 		RSSEnabled:       strings.ToLower(os.Getenv("RSS_ENABLED")) == "true",
 		RSSCheckInterval: rssInterval,
@@ -106,9 +106,9 @@ func Load() {
 	}
 
 	if Cfg.EnableDevMock {
-		log.Println("⚠️ UPOZORNĚNÍ: ENABLE_DEV_MOCK=true – simulované endpointy jsou povoleny. V produkci nastavte na false!")
+		log.Println("UPOZORNĚNÍ: ENABLE_DEV_MOCK=true – simulované endpointy jsou povoleny. V produkci nastavte na false!")
 	} else {
-		log.Println("🛡️ Bezpečnostní režim: Dev mock endpointy jsou zakázány.")
+		log.Println("Bezpečnostní režim: Dev mock endpointy jsou zakázány.")
 	}
 }
 

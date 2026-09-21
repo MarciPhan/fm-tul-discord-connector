@@ -18,7 +18,7 @@ func StartAuditWorker(s *discordgo.Session) {
 	eventChan := audit.GetChannel()
 
 	go func() {
-		log.Println("🛡️ Audit Worker spuštěn.")
+		log.Println("Audit Worker spuštěn.")
 		for {
 			select {
 			case evt := <-eventChan:
@@ -29,7 +29,7 @@ func StartAuditWorker(s *discordgo.Session) {
 					log.Printf("[AUDIT LOG] %s: %s", evt.Title, evt.Description)
 				}
 			case <-stopAuditChan:
-				log.Println("🛑 Audit Worker zastaven.")
+				log.Println("Audit Worker zastaven.")
 				return
 			}
 		}
@@ -70,6 +70,6 @@ func sendAuditEmbed(s *discordgo.Session, auditChannel string, evt audit.Event) 
 
 	_, err := s.ChannelMessageSendEmbed(auditChannel, embed)
 	if err != nil {
-		log.Printf("⚠️ Nelze odeslat audit log do kanálu %s: %v", auditChannel, err)
+		log.Printf("Nelze odeslat audit log do kanálu %s: %v", auditChannel, err)
 	}
 }

@@ -23,9 +23,9 @@ func (c *CmdSetup) Info() *discordgo.ApplicationCommand {
 
 func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	embed := &discordgo.MessageEmbed{
-		Title: "🎓 Ověření studentů a zaměstnanců FM TUL",
+		Title: "Ověření studentů a zaměstnanců FM TUL",
 		Description: "Vítejte na Discord serveru Fakulty mechatroniky, informatiky a mezioborových studií TUL!\n\n" +
-			"Pro získání přístupu do neveřejných fakultních kanálů a místností **klikněte na reakci 🎓 pod touto zprávou** (nebo na tlačítko níže).\n\n" +
+			"Pro získání přístupu do neveřejných fakultních kanálů a místností **klikněte na reakci pod touto zprávou** (nebo na tlačítko níže).\n\n" +
 			"Bot vám obratem pošle privátní odkaz k ověření přes univerzitní Microsoft účet (`@tul.cz`).",
 		Color: 0x0284c7,
 		Footer: &discordgo.MessageEmbedFooter{
@@ -49,7 +49,7 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	})
 
 	if err != nil {
-		respondEphemeral(s, i, "❌ Chyba při odesílání zprávy.")
+		respondEphemeral(s, i, "Chyba při odesílání zprávy.")
 		return
 	}
 
@@ -59,11 +59,11 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	}
 	_ = s.MessageReactionAdd(i.ChannelID, sentMsg.ID, targetEmoji)
 	
-	respondEphemeral(s, i, "✅ Ověřovací zpráva byla odeslána do tohoto kanálu.")
+	respondEphemeral(s, i, "Ověřovací zpráva byla odeslána do tohoto kanálu.")
 	
 	username := GetInteractionUsername(i)
-	log.Printf("📢 /setup: správce %s odeslal ověřovací zprávu (ID: %s)", username, sentMsg.ID)
-	audit.Log(audit.LevelInfo, "🛠️ Inicializace serveru", "Správce **"+username+"** vytvořil pomocí `/setup` ověřovací bod.")
+	log.Printf("/setup: správce %s odeslal ověřovací zprávu (ID: %s)", username, sentMsg.ID)
+	audit.Log(audit.LevelInfo, "Inicializace serveru", "Správce **"+username+"** vytvořil pomocí `/setup` ověřovací bod.")
 }
 
 func init() {

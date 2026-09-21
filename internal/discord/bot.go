@@ -16,14 +16,14 @@ var Session *discordgo.Session
 // Setup inicializuje a spusti Discord bota
 func Setup() {
 	if config.Cfg.DiscordToken == "" || config.Cfg.DiscordToken == "SEM_VLOZTE_DISCORD_BOT_TOKEN" {
-		log.Println("ℹ️ DISCORD_TOKEN není nastaven v .env – bot není spuštěn (web konektor funguje dál).")
+		log.Println("DISCORD_TOKEN není nastaven v .env – bot není spuštěn (web konektor funguje dál).")
 		return
 	}
 
 	var err error
 	Session, err = discordgo.New("Bot " + config.Cfg.DiscordToken)
 	if err != nil {
-		log.Printf("⚠️ Chyba při vytváření bota: %v", err)
+		log.Printf("Chyba při vytváření bota: %v", err)
 		return
 	}
 
@@ -34,7 +34,7 @@ func Setup() {
 
 	// Ready handler – synchronizace prikazu
 	Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("🤖 Discord Bot %s je online! Registrováno %d příkazů.", s.State.User.Username, CmdRegistry.CommandCount())
+		log.Printf("Discord Bot %s je online! Registrováno %d příkazů.", s.State.User.Username, CmdRegistry.CommandCount())
 		CmdRegistry.SyncWithGuild(s, config.Cfg.DiscordGuildID)
 	})
 
@@ -49,21 +49,21 @@ func Setup() {
 
 	// Audit Log pro nativni mazani a upravy zprav uzivateli
 	Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageDelete) {
-		audit.Log(audit.LevelWarning, "🗑️ Zpráva smazána", fmt.Sprintf("Byla smazána zpráva s ID `%s` v kanálu <#%s>.", m.ID, m.ChannelID))
+		audit.Log(audit.LevelWarning, "Zpráva smazána", fmt.Sprintf("Byla smazána zpráva s ID `%s` v kanálu <#%s>.", m.ID, m.ChannelID))
 	})
 	Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageUpdate) {
 		if m.Author != nil { // Mame autora z cache
-			audit.Log(audit.LevelInfo, "✏️ Zpráva upravena", fmt.Sprintf("Uživatel **%s** upravil zprávu v kanálu <#%s>.", m.Author.Username, m.ChannelID))
+			audit.Log(audit.LevelInfo, "Zpráva upravena", fmt.Sprintf("Uživatel **%s** upravil zprávu v kanálu <#%s>.", m.Author.Username, m.ChannelID))
 		}
 	})
 	Session.AddHandler(func(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
-		audit.Log(audit.LevelWarning, "🚪 Uživatel opustil server", fmt.Sprintf("Uživatel **%s** (`%s`) se odpojil ze serveru.", m.User.Username, m.User.ID))
+		audit.Log(audit.LevelWarning, "Uživatel opustil server", fmt.Sprintf("Uživatel **%s** (`%s`) se odpojil ze serveru.", m.User.Username, m.User.ID))
 	})
 
 	// Pripojeni k Discord API
 	err = Session.Open()
 	if err != nil {
-		log.Printf("⚠️ Chyba při připojení bota k Discordu: %v", err)
+		log.Printf("Chyba při připojení bota k Discordu: %v", err)
 		return
 	}
 

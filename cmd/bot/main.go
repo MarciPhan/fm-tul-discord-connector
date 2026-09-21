@@ -34,8 +34,8 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	log.Println("🛑 Zastavuji server a Discord bota...")
+	log.Println("Zastavuji server a Discord bota...")
 	web.Shutdown()
 	discord.Close()
-	log.Println("👋 Aplikace byla korektně ukončena.")
+	log.Println("Aplikace byla korektně ukončena.")
 }

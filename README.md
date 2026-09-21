@@ -1,4 +1,4 @@
-# FM TUL ↔ Discord Connector 🎓
+# FM TUL - Discord Connector
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Build & Tests](https://img.shields.io/badge/Tests-Passing-22c55e.svg)](https://github.com/Mapetr/discord-pslib-connector)
@@ -17,23 +17,23 @@
 
 ---
 
-## 📑 Obsah
+## Obsah
 
-1. [Přehled projektu](#-přehled-projektu)
-2. [Architektura a toky dat](#-architektura-a-toky-dat)
-3. [Klíčové funkce](#-klíčové-funkce)
-4. [Bezpečnostní model (Defense-in-Depth)](#-bezpečnostní-model-defense-in-depth)
-5. [Instalace a rychlý start](#-instalace-a-rychlý-start)
-6. [Konfigurace prostředí](#-konfigurace-prostředí)
-7. [Katalog Slash Příkazů](#-katalog-slash-příkazů)
-8. [Produkční nasazení (systemd & Nginx)](#-produkční-nasazení-systemd--nginx)
-9. [Testování a vývoj](#-testování-a-vývoj)
-10. [Vývoj s využitím AI a Knowledge Base](#-vývoj-s-využitím-ai-a-knowledge-base)
-11. [Licence](#-licence)
+1. [Přehled projektu](#přehled-projektu)
+2. [Architektura a toky dat](#architektura-a-toky-dat)
+3. [Klíčové funkce](#klíčové-funkce)
+4. [Bezpečnostní model (Defense-in-Depth)](#bezpečnostní-model-defense-in-depth)
+5. [Instalace a rychlý start](#instalace-a-rychlý-start)
+6. [Konfigurace prostředí](#konfigurace-prostředí)
+7. [Katalog Slash Příkazů](#katalog-slash-příkazů)
+8. [Produkční nasazení (systemd & Nginx)](#produkční-nasazení-systemd--nginx)
+9. [Testování a vývoj](#testování-a-vývoj)
+10. [Vývoj s využitím AI a Knowledge Base](#vývoj-s-využitím-ai-a-knowledge-base)
+11. [Licence](#licence)
 
 ---
 
-## 💡 Přehled projektu
+## Přehled projektu
 
 FM TUL Discord Connector řeší bezpečné a plně automatizované ověřování členů akademické obce (studentů a zaměstnanců) při vstupu na fakultní Discord server.
 
@@ -45,7 +45,7 @@ FM TUL Discord Connector řeší bezpečné a plně automatizované ověřován�
 
 ---
 
-## 🏗️ Architektura a toky dat
+## Architektura a toky dat
 
 ```mermaid
 sequenceDiagram
@@ -74,7 +74,7 @@ sequenceDiagram
 
 ---
 
-## 🌟 Klíčové funkce
+## Klíčové funkce
 
 - **Automatické přidělování rolí:** Rozpoznání role (`Student FM`, `Zaměstnanec FM`, `Ověřený`) na základě Microsoft profilu a automatické udělení na Discordu.
 - **Sanitizace přezdívek:** Automatické nastavení přezdívky podle jména v MS Graph API s filtrací řídicích znaků, neviditelných mezer (zero-width characters) a zneužitelných tagů (`@everyone`, `@here`, `<@`).
@@ -85,7 +85,7 @@ sequenceDiagram
 
 ---
 
-## 🛡️ Bezpečnostní model (Defense-in-Depth)
+## Bezpečnostní model (Defense-in-Depth)
 
 Projekt je od základu navržen podle přísných bezpečnostních standardů:
 
@@ -104,7 +104,7 @@ Projekt je od základu navržen podle přísných bezpečnostních standardů:
 
 ---
 
-## 🚀 Instalace a rychlý start
+## Instalace a rychlý start
 
 ### Požadavky
 - [Go 1.21+](https://go.dev/dl/) nebo novější
@@ -133,7 +133,7 @@ scripts\start.bat
 
 ---
 
-## ⚙️ Konfigurace prostředí
+## Konfigurace prostředí
 
 Aplikace kombinuje **statickou konfiguraci** (`.env`) a **dynamickou konfiguraci** (`discord_config.json`). Dynamické nastavení zadané přes Discord příkaz `/config` má vždy přednost.
 
@@ -169,7 +169,7 @@ ENABLE_DEV_MOCK="false"
 
 ---
 
-## 🤖 Katalog Slash Příkazů
+## Katalog Slash Příkazů
 
 Všechny příkazy využívají moderní Discord Slash Commands API:
 
@@ -192,7 +192,7 @@ Všechny příkazy využívají moderní Discord Slash Commands API:
 
 ---
 
-## 🌐 Produkční nasazení (systemd & Nginx)
+## Produkční nasazení (systemd & Nginx)
 
 ### 1. Kompilace produkční binárky
 ```bash
@@ -239,7 +239,7 @@ server {
 
 ---
 
-## 🧪 Testování a vývoj
+## Testování a vývoj
 
 Projekt disponuje rozsáhlou testovací sadou s plnou podporou detekce datových souběhů:
 
@@ -256,7 +256,7 @@ go test -v -race -count=1 ./...
 
 ---
 
-## 🧠 Vývoj s využitím AI a Knowledge Base
+## Vývoj s využitím AI a Knowledge Base
 
 Tento repozitář obsahuje komplexní standardizované materiály pro usnadnění práce vývojářů i AI asistentů (Antigravity, Cursor, Copilot, ChatGPT, Claude):
 
@@ -278,7 +278,7 @@ Skript automaticky zanalyzuje kód, zaktualizuje metriky a registry příkazů v
 
 ---
 
-## 📄 Licence
+## Licence
 
 Tento projekt je licencován pod licencí **MIT**. Více informací naleznete v přiložené licenci.
 

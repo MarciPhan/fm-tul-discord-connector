@@ -34,7 +34,7 @@ type CodeStats struct {
 }
 
 func main() {
-	fmt.Println("🚀 Spouštím automatickou aktualizaci Knowledge Base a README...")
+	fmt.Println("Spouštím automatickou aktualizaci Knowledge Base a README...")
 
 	root := "."
 	if _, err := os.Stat("internal"); os.IsNotExist(err) {
@@ -50,12 +50,12 @@ func main() {
 	aiContextPath := filepath.Join(root, "docs", "knowledge-base", "AI_CONTEXT.md")
 
 	if err := generateSummary(summaryPath, commands, endpoints, stats); err != nil {
-		fmt.Printf("❌ Chyba generování SUMMARY.md: %v\n", err)
+		fmt.Printf("Chyba generování SUMMARY.md: %v\n", err)
 		os.Exit(1)
 	}
 
 	if err := generateAIContext(aiContextPath, commands, endpoints, stats); err != nil {
-		fmt.Printf("❌ Chyba generování AI_CONTEXT.md: %v\n", err)
+		fmt.Printf("Chyba generování AI_CONTEXT.md: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -64,15 +64,15 @@ func main() {
 	readmeEN := filepath.Join(root, "README_EN.md")
 
 	if err := updateReadme(readmeCS, false, commands, stats); err != nil {
-		fmt.Printf("❌ Chyba aktualizace README.md: %v\n", err)
+		fmt.Printf("Chyba aktualizace README.md: %v\n", err)
 		os.Exit(1)
 	}
 	if err := updateReadme(readmeEN, true, commands, stats); err != nil {
-		fmt.Printf("❌ Chyba aktualizace README_EN.md: %v\n", err)
+		fmt.Printf("Chyba aktualizace README_EN.md: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("✅ Úspěšně aktualizováno:")
+	fmt.Println("Úspěšně aktualizováno:")
 	fmt.Printf("   - %s\n", summaryPath)
 	fmt.Printf("   - %s\n", aiContextPath)
 	fmt.Printf("   - %s\n", readmeCS)
@@ -309,7 +309,7 @@ func generateSummary(path string, cmds []CommandDetailed, endpoints []EndpointIn
 	sb.WriteString("# Knowledge Base Index – FM TUL Discord Connector\n\n")
 	sb.WriteString(fmt.Sprintf("*Automaticky vygenerováno: %s*\n\n", time.Now().Format("2006-01-02 15:04:05 MST")))
 
-	sb.WriteString("## 📚 Dokumentace v Knowledge Base\n\n")
+	sb.WriteString("## Dokumentace v Knowledge Base\n\n")
 	sb.WriteString("- [Architektura systému](architecture.md) – Moduly, toky dat, background workery.\n")
 	sb.WriteString("- [Bezpečnostní model](security.md) – HMAC sessions, PKCE, Origin validace, anti-multi-accounting, SSRF ochrana.\n")
 	sb.WriteString("- [OAuth2 Průběh](oauth-flow.md) – Sekvenční diagram, Microsoft Entra ID a Discord OAuth2 integrace.\n")
@@ -317,21 +317,21 @@ func generateSummary(path string, cmds []CommandDetailed, endpoints []EndpointIn
 	sb.WriteString("- [Konfigurace](config-reference.md) – Kompletní matice proměnných `.env` a `discord_config.json`.\n")
 	sb.WriteString("- [AI Context Snapshot](AI_CONTEXT.md) – Kompaktní přehled projektu pro rychlé načtení do kontextu AI.\n\n")
 
-	sb.WriteString("## 📊 Metriky projektu\n\n")
+	sb.WriteString("## Metriky projektu\n\n")
 	sb.WriteString(fmt.Sprintf("- **Celkem zdrojových Go souborů:** %d\n", stats.GoFiles))
 	sb.WriteString(fmt.Sprintf("- **Testovací soubory:** %d\n", stats.TestFiles))
 	sb.WriteString(fmt.Sprintf("- **Celkový počet řádků Go kódu:** ~%d\n", stats.TotalLines))
 	sb.WriteString(fmt.Sprintf("- **Aktivních Slash příkazů a podpříkazů:** %d\n", len(cmds)))
 	sb.WriteString(fmt.Sprintf("- **Aktivních HTTP endpointů:** %d\n\n", len(endpoints)))
 
-	sb.WriteString("## 🤖 Slash Příkazy v repozitáři\n\n")
+	sb.WriteString("## Slash Příkazy v repozitáři\n\n")
 	sb.WriteString("| Příkaz | Oprávnění | Popis | Zdrojový soubor |\n| :--- | :--- | :--- | :--- |\n")
 	for _, c := range cmds {
 		sb.WriteString(fmt.Sprintf("| `%s` | %s | %s | `internal/discord/%s` |\n", c.Name, c.PermissionCS, c.DescriptionCS, c.SourceFile))
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString("## 🌐 HTTP Endpointy (`internal/web/server.go`)\n\n")
+	sb.WriteString("## HTTP Endpointy (`internal/web/server.go`)\n\n")
 	sb.WriteString("| Metoda | Cesta | Handler |\n| :--- | :--- | :--- |\n")
 	for _, e := range endpoints {
 		sb.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` |\n", e.Method, e.Path, e.Handler))
