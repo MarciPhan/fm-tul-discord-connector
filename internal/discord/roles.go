@@ -14,7 +14,7 @@ import (
 )
 
 // PerformJoinAndRole automaticky pripoji uzivatele na server a priradi role
-func PerformJoinAndRole(botSession interface{ GetState() string }, discordUserID, userAccessToken string, student *storage.Student) error {
+func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.Student) error {
 	guildID := config.Cfg.DiscordGuildID
 	if guildID == "" {
 		return fmt.Errorf("DISCORD_GUILD_ID neni nakonfigurovano")
@@ -102,7 +102,3 @@ func PerformJoinAndRole(botSession interface{ GetState() string }, discordUserID
 	return nil
 }
 
-// PerformJoinAndRoleDirect – zjednodusena verze bez interface parametru
-func PerformJoinAndRoleDirect(discordUserID, userAccessToken string, student *storage.Student) error {
-	return PerformJoinAndRole(nil, discordUserID, userAccessToken, student)
-}

@@ -14,6 +14,7 @@ import (
 
 	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
+	"sbibolet/internal/security"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/mmcdole/gofeed"
@@ -35,6 +36,7 @@ var (
 	FeedsFile    = "feeds.json"
 	rssTicker    *time.Ticker
 	stopRSSChan  chan struct{}
+	stopRSSOnce  sync.Once
 )
 
 // isValidRSSURL ověřuje formát URL a chrání proti SSRF útokům na interní sítě
@@ -49,6 +51,10 @@ func isValidRSSURL(rawURL string) error {
 	hostname := strings.ToLower(u.Hostname())
 	if hostname == "" || hostname == "localhost" || hostname == "::1" || strings.HasPrefix(hostname, "127.") {
 		return fmt.Errorf("nelze přidat lokální síťovou adresu (SSRF ochrana)")
+	}
+	// Explicitní blokace cloud metadata endpoint (AWS, GCP, Azure IMDS)
+	if hostname == "169.254.169.254" || hostname == "metadata.google.internal" {
+		return fmt.Errorf("nelze přidat cloud metadata adresu (SSRF ochrana)")
 	}
 	if ip := net.ParseIP(hostname); ip != nil {
 		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
@@ -139,7 +145,7 @@ func StopRSSWorker() {
 		rssTicker.Stop()
 	}
 	if stopRSSChan != nil {
-		close(stopRSSChan)
+		stopRSSOnce.Do(func() { close(stopRSSChan) })
 	}
 }
 
@@ -313,7 +319,9 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			if opt.Name == "url" {
 				url = strings.TrimSpace(opt.StringValue())
 			} else if opt.Name == "kanal" {
-				channelID = opt.ChannelValue(s).ID
+				if ch := opt.ChannelValue(s); ch != nil {
+					channelID = ch.ID
+				}
 			}
 		}
 
@@ -332,7 +340,7 @@ func (c *CmdRSS) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			return
 		}
 
-		id := fmt.Sprintf("rss_%d", time.Now().Unix())
+		id := fmt.Sprintf("rss_%s", security.GenerateID()[:12])
 		feedsMux.Lock()
 		feedsDB[id] = &FeedEntry{
 			ID:        id,

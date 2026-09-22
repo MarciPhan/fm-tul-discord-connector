@@ -24,6 +24,7 @@ func TestIsValidRSSURL(t *testing.T) {
 		{"http://127.0.0.1/feed", false},
 		{"http://127.0.0.2:8000/", false},
 		{"http://169.254.169.254/latest/meta-data/", false},
+		{"http://metadata.google.internal/computeMetadata/v1/", false},
 		{"http://10.0.0.1/rss", false},
 		{"http://192.168.1.1/rss", false},
 		{"http://172.16.0.1/rss", false},

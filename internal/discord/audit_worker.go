@@ -2,6 +2,7 @@ package discord
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"sbibolet/internal/audit"
@@ -10,7 +11,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var stopAuditChan chan struct{}
+var (
+	stopAuditChan chan struct{}
+	stopAuditOnce sync.Once
+)
 
 // StartAuditWorker spouští asynchronní zpracování audit logů z fronty do Discordu
 func StartAuditWorker(s *discordgo.Session) {
@@ -39,7 +43,7 @@ func StartAuditWorker(s *discordgo.Session) {
 // StopAuditWorker bezpečně zastaví zapisování do auditu
 func StopAuditWorker() {
 	if stopAuditChan != nil {
-		close(stopAuditChan)
+		stopAuditOnce.Do(func() { close(stopAuditChan) })
 	}
 }
 

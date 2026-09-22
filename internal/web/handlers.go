@@ -156,12 +156,17 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := http.PostForm(tokenURL, form)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Printf("MSAL Token error: status %v, err: %v", resp, err)
+	if err != nil {
+		log.Printf("MSAL Token error: %v", err)
 		http.Error(w, "Chyba při ověřování přihlášení u Microsoft TUL.", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("MSAL Token error: status %d", resp.StatusCode)
+		http.Error(w, "Chyba při ověřování přihlášení u Microsoft TUL.", http.StatusBadGateway)
+		return
+	}
 
 	var tokenRes struct {
 		AccessToken string `json:"access_token"`
@@ -178,11 +183,17 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	gResp, gErr := client.Do(req)
-	if gErr != nil || gResp.StatusCode != http.StatusOK {
+	if gErr != nil {
+		log.Printf("Graph API error: %v", gErr)
 		http.Error(w, "Nepodařilo se načíst profil z Microsoft Graph API.", http.StatusBadGateway)
 		return
 	}
 	defer gResp.Body.Close()
+	if gResp.StatusCode != http.StatusOK {
+		log.Printf("Graph API error: status %d", gResp.StatusCode)
+		http.Error(w, "Nepodařilo se načíst profil z Microsoft Graph API.", http.StatusBadGateway)
+		return
+	}
 
 	var profile struct {
 		ID                string `json:"id"`
@@ -273,18 +284,27 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := http.PostForm("https://discord.com/api/v10/oauth2/token", form)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		log.Printf("Discord OAuth token exchange selhal: %v", err)
 		http.Error(w, "Chyba při komunikaci s Discord OAuth.", http.StatusBadGateway)
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Discord OAuth token exchange selhal: status %d", resp.StatusCode)
+		http.Error(w, "Chyba při komunikaci s Discord OAuth.", http.StatusBadGateway)
+		return
+	}
 
 	var tokenRes struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`
 	}
-	_ = json.NewDecoder(resp.Body).Decode(&tokenRes)
+	if err := json.NewDecoder(resp.Body).Decode(&tokenRes); err != nil || tokenRes.AccessToken == "" {
+		log.Printf("Discord OAuth: neplatná odpověď tokenu: %v", err)
+		http.Error(w, "Neplatná odpověď z Discord OAuth.", http.StatusBadGateway)
+		return
+	}
 
 	// 3. Nacteni Discord profilu (@me)
 	req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://discord.com/api/v10/users/@me", nil)
@@ -292,17 +312,27 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	uResp, uErr := client.Do(req)
-	if uErr != nil || uResp.StatusCode != http.StatusOK {
+	if uErr != nil {
+		log.Printf("Discord users/@me error: %v", uErr)
 		http.Error(w, "Nepodařilo se načíst profil z Discord API.", http.StatusBadGateway)
 		return
 	}
 	defer uResp.Body.Close()
+	if uResp.StatusCode != http.StatusOK {
+		log.Printf("Discord users/@me error: status %d", uResp.StatusCode)
+		http.Error(w, "Nepodařilo se načíst profil z Discord API.", http.StatusBadGateway)
+		return
+	}
 
 	var discordUser struct {
 		ID       string `json:"id"`
 		Username string `json:"username"`
 	}
-	_ = json.NewDecoder(uResp.Body).Decode(&discordUser)
+	if err := json.NewDecoder(uResp.Body).Decode(&discordUser); err != nil || discordUser.ID == "" {
+		log.Printf("Discord OAuth: neplatný uživatelský profil: %v", err)
+		http.Error(w, "Nepodařilo se načíst Discord profil.", http.StatusBadGateway)
+		return
+	}
 
 	student.DiscordID = discordUser.ID
 
@@ -315,7 +345,7 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 5. Automaticke pripojeni na server a prirazeni roli
-	err = discord.PerformJoinAndRoleDirect(discordUser.ID, tokenRes.AccessToken, student)
+	err = discord.PerformJoinAndRole(discordUser.ID, tokenRes.AccessToken, student)
 	if err != nil {
 		log.Printf("Chyba při přiřazení rolí na Discordu: %v", err)
 	}

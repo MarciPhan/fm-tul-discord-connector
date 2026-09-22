@@ -55,7 +55,23 @@ func SanitizeNickname(name string) string {
 
 // DetermineRole urcuje, zda jde o studenta ci zamestnance podle pozice a emailu
 func DetermineRole(jobTitle, email string) string {
-	if jobTitle != "" || strings.Contains(strings.ToLower(email), "zamestnanec") {
+	lowerTitle := strings.ToLower(jobTitle)
+	lowerEmail := strings.ToLower(email)
+
+	// Zamestnanecke pozice typicke pro univerzitu
+	staffIndicators := []string{
+		"profesor", "docent", "lektor", "asistent",
+		"vedoucí", "děkan", "proděkan", "tajemník",
+		"zaměstnanec", "pracovník", "technik", "správce",
+	}
+	for _, indicator := range staffIndicators {
+		if strings.Contains(lowerTitle, indicator) {
+			return "Zaměstnanec FM"
+		}
+	}
+
+	// Fallback: kontrola emailove adresy
+	if strings.Contains(lowerEmail, "zamestnanec") {
 		return "Zaměstnanec FM"
 	}
 	return "Student FM"

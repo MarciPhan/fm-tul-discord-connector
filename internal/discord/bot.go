@@ -57,7 +57,9 @@ func Setup() {
 		}
 	})
 	Session.AddHandler(func(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
-		audit.Log(audit.LevelWarning, "Uživatel opustil server", fmt.Sprintf("Uživatel **%s** (`%s`) se odpojil ze serveru.", m.User.Username, m.User.ID))
+		if m.User != nil {
+			audit.Log(audit.LevelWarning, "Uživatel opustil server", fmt.Sprintf("Uživatel **%s** (`%s`) se odpojil ze serveru.", m.User.Username, m.User.ID))
+		}
 	})
 
 	// Pripojeni k Discord API

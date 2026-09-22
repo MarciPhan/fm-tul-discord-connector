@@ -47,7 +47,9 @@ func (c *CmdEdit) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	for _, opt := range options {
 		switch opt.Name {
 		case "kanal":
-			channelID = opt.ChannelValue(s).ID
+			if ch := opt.ChannelValue(s); ch != nil {
+				channelID = ch.ID
+			}
 		case "zprava_id":
 			messageID = opt.StringValue()
 		case "novy_text":

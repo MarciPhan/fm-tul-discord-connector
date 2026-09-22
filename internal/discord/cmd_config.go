@@ -97,7 +97,14 @@ func (c *CmdConfig) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 	switch subcmd.Name {
 	case "set-channel":
 		typ := subcmd.Options[0].StringValue()
-		channelID := subcmd.Options[1].ChannelValue(s).ID
+		var channelID string
+		if ch := subcmd.Options[1].ChannelValue(s); ch != nil {
+			channelID = ch.ID
+		}
+		if channelID == "" {
+			respondEphemeral(s, i, "Nepodařilo se načíst cílový kanál.")
+			return
+		}
 		
 		var err error
 		var msg string
@@ -118,7 +125,14 @@ func (c *CmdConfig) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 
 	case "set-role":
 		typ := subcmd.Options[0].StringValue()
-		roleID := subcmd.Options[1].RoleValue(s, i.GuildID).ID
+		var roleID string
+		if r := subcmd.Options[1].RoleValue(s, i.GuildID); r != nil {
+			roleID = r.ID
+		}
+		if roleID == "" {
+			respondEphemeral(s, i, "Nepodařilo se načíst cílovou roli.")
+			return
+		}
 		
 		var err error
 		var msg string

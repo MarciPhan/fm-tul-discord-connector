@@ -183,15 +183,23 @@ func CleanExpired() {
 	}
 }
 
-// StartCleaner spusti periodicky cistici goroutine
-func StartCleaner() {
+// StartCleaner spusti periodicky cistici goroutine a vraci funkci pro zastaveni
+func StartCleaner() func() {
 	ticker := time.NewTicker(2 * time.Minute)
+	done := make(chan struct{})
 	go func() {
-		for range ticker.C {
-			CleanExpired()
-			security.CleanExpiredLimits()
+		for {
+			select {
+			case <-ticker.C:
+				CleanExpired()
+				security.CleanExpiredLimits()
+			case <-done:
+				ticker.Stop()
+				return
+			}
 		}
 	}()
+	return func() { close(done) }
 }
 
 // InjectExpired vlozi expirovanou session (pouzivano v testech)

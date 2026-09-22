@@ -21,7 +21,7 @@ func main() {
 	storage.LoadUsers()
 
 	// 3. Spuštění periodického čištění sessions a rate limitů
-	session.StartCleaner()
+	stopCleaner := session.StartCleaner()
 
 	// 4. Spuštění Discord bota (s registrem příkazů, reakcemi, welcome)
 	discord.Setup()
@@ -37,5 +37,6 @@ func main() {
 	log.Println("Zastavuji server a Discord bota...")
 	web.Shutdown()
 	discord.Close()
+	stopCleaner()
 	log.Println("Aplikace byla korektně ukončena.")
 }
