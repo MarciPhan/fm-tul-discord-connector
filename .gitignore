@@ -13,3 +13,9 @@ discord_config_*.tmp
 
 # Test artifacts
 users_test_*.json
+
+# Certificates & private keys
+certs/
+*.key
+*.pem
+*.pfx
