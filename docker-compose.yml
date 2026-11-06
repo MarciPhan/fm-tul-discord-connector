@@ -1,0 +1,18 @@
+services:
+  fm-tul-bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      BASE_URL: https://discord.fm.tul.cz
+      SECURE_COOKIES: "true"
+      ENABLE_DEV_MOCK: "false"
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - bot-data:/data
+
+volumes:
+  bot-data:

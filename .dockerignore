@@ -1,0 +1,7 @@
+.git
+.env
+fm-tul-bot
+users.json
+docs
+scripts
+*.md

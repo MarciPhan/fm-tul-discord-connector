@@ -19,3 +19,7 @@ certs/
 *.key
 *.pem
 *.pfx
+
+# Secrets
+.env
+deploy.log
