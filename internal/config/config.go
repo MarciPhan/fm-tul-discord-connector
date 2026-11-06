@@ -10,6 +10,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// defaultHMACSecret je pouze vyvojovy fallback; v produkci musi byt HMAC_SECRET nastaven
+const defaultHMACSecret = "super-secret-fallback-key-change-in-production"
+
 // Config nacteny z prostredi (.env)
 type Config struct {
 	// Microsoft OAuth2 (TUL Entra ID)
@@ -99,10 +102,14 @@ func Load() {
 		BaseURL:      baseURL,
 		CookieDomain: os.Getenv("COOKIE_DOMAIN"),
 
-		HMACSecret:       getEnvOr("HMAC_SECRET", "super-secret-fallback-key-change-in-production"),
+		HMACSecret:       getEnvOr("HMAC_SECRET", defaultHMACSecret),
 		EnableDevMock:    strings.ToLower(os.Getenv("ENABLE_DEV_MOCK")) == "true",
 		SecureCookies:    strings.ToLower(os.Getenv("SECURE_COOKIES")) == "true",
 		RateLimitEnabled: os.Getenv("RATE_LIMIT_ENABLED") != "false",
+	}
+
+	if Cfg.HMACSecret == defaultHMACSecret && !Cfg.EnableDevMock {
+		log.Fatal("HMAC_SECRET není nastaven (používá se veřejně známý výchozí klíč). Nastavte náhodný klíč o délce alespoň 32 znaků.")
 	}
 
 	if Cfg.EnableDevMock {
