@@ -144,7 +144,8 @@ The application uses a **hybrid configuration system**:
 ```env
 # === Microsoft Entra ID (TUL) ===
 MSAL_CLIENT_ID="your-azure-client-id"
-MSAL_CLIENT_SECRET="your-azure-client-secret"
+MSAL_CLIENT_KEY_PATH="/certs/msal.key"
+MSAL_CLIENT_CERT_PATH="/certs/msal.crt"
 MSAL_TENANT_ID="common"
 
 # === Discord Bot & OAuth2 ===

@@ -142,7 +142,8 @@ Aplikace kombinuje **statickou konfiguraci** (`.env`) a **dynamickou konfiguraci
 ```env
 # === Microsoft Entra ID (TUL) ===
 MSAL_CLIENT_ID="vase-azure-client-id"
-MSAL_CLIENT_SECRET="vase-azure-client-secret"
+MSAL_CLIENT_KEY_PATH="/certs/msal.key"
+MSAL_CLIENT_CERT_PATH="/certs/msal.crt"
 MSAL_TENANT_ID="common"
 
 # === Discord Bot & OAuth2 ===

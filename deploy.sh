@@ -61,10 +61,24 @@ if [ -z "$(get HMAC_SECRET)" ]; then
 fi
 
 missing=()
-for v in MSAL_CLIENT_ID MSAL_CLIENT_SECRET MSAL_TENANT_ID DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET DISCORD_TOKEN DISCORD_GUILD_ID; do
+for v in MSAL_CLIENT_ID MSAL_TENANT_ID DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET DISCORD_TOKEN DISCORD_GUILD_ID; do
   val=$(get "$v")
   if [ -z "$val" ] || echo "$val" | grep -qiE '^(SEM_|SET_|YOUR_|CHANGE|TODO|xxx)'; then missing+=("$v"); fi
 done
+# Microsoft: přihlášení certifikátem (preferované) nebo client secretem
+key_path=$(get MSAL_CLIENT_KEY_PATH)
+if [ -n "$key_path" ]; then
+  host_key="certs/$(basename "$key_path")"
+  [ -f "$host_key" ] || missing+=("$host_key (privátní klíč v ./certs, viz DEPLOY.md)")
+  if [ -z "$(get MSAL_CLIENT_CERT_PATH)" ] && [ -z "$(get MSAL_CLIENT_CERT_THUMBPRINT)" ]; then
+    missing+=("MSAL_CLIENT_CERT_PATH nebo MSAL_CLIENT_CERT_THUMBPRINT")
+  fi
+else
+  val=$(get MSAL_CLIENT_SECRET)
+  if [ -z "$val" ] || echo "$val" | grep -qiE '^(SEM_|SET_|YOUR_|CHANGE|TODO|xxx)'; then
+    missing+=("MSAL_CLIENT_KEY_PATH (nebo MSAL_CLIENT_SECRET)")
+  fi
+fi
 [ ${#missing[@]} -eq 0 ] || die "V .env chybí nebo jsou nevyplněné: ${missing[*]}"
 [ "$(get ENABLE_DEV_MOCK | tr A-Z a-z)" != "true" ] || warn "ENABLE_DEV_MOCK=true v .env (compose ho v produkci přepíše na false)."
 ok ".env zkontrolován"

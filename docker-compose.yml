@@ -13,6 +13,8 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - bot-data:/data
+      # privátní klíč a certifikát pro Microsoft (nejsou v gitu)
+      - ./certs:/certs:ro
 
 volumes:
   bot-data:
