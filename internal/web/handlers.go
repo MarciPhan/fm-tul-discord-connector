@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"sbibolet/internal/audit"
 	"sbibolet/internal/config"
 	"sbibolet/internal/discord"
+	"sbibolet/internal/msalauth"
 	"sbibolet/internal/security"
 	"sbibolet/internal/session"
 	"sbibolet/internal/storage"
@@ -148,11 +150,28 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 	tokenURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenant)
 	form := url.Values{
 		"client_id":     {config.Cfg.MSALClientID},
-		"client_secret": {config.Cfg.MSALClientSecret},
 		"grant_type":    {"authorization_code"},
 		"code":          {code},
 		"redirect_uri":  {redirectURI},
 		"code_verifier": {verifier},
+	}
+	if config.Cfg.MSALClientKeyPath != "" {
+		signer, err := msalSigner()
+		if err != nil {
+			log.Printf("MSAL client assertion: %v", err)
+			http.Error(w, "Chyba konfigurace přihlášení k Microsoft TUL.", http.StatusInternalServerError)
+			return
+		}
+		assertion, err := signer.Assertion(tokenURL)
+		if err != nil {
+			log.Printf("MSAL client assertion: %v", err)
+			http.Error(w, "Chyba konfigurace přihlášení k Microsoft TUL.", http.StatusInternalServerError)
+			return
+		}
+		form.Set("client_assertion_type", msalauth.AssertionType)
+		form.Set("client_assertion", assertion)
+	} else {
+		form.Set("client_secret", config.Cfg.MSALClientSecret)
 	}
 
 	resp, err := http.PostForm(tokenURL, form)
@@ -522,3 +541,18 @@ const indexTemplate = `
 	</body>
 	</html>
 	`
+
+var (
+	signerOnce sync.Once
+	signer     *msalauth.Signer
+	signerErr  error
+)
+
+// msalSigner nacte privatni klic pri prvnim pouziti a drzi ho v pameti
+func msalSigner() (*msalauth.Signer, error) {
+	signerOnce.Do(func() {
+		c := config.Cfg
+		signer, signerErr = msalauth.NewSigner(c.MSALClientID, c.MSALClientKeyPath, c.MSALClientCertPath, c.MSALClientThumbprint)
+	})
+	return signer, signerErr
+}
