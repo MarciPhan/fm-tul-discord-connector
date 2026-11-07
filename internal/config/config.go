@@ -19,6 +19,10 @@ type Config struct {
 	MSALClientID     string
 	MSALClientSecret string
 	MSALTenantID     string
+	// Prihlaseni certifikatem (preferovano pred client secretem)
+	MSALClientKeyPath    string
+	MSALClientCertPath   string
+	MSALClientThumbprint string
 
 	// Discord OAuth2 & Bot
 	DiscordClientID        string
@@ -38,7 +42,7 @@ type Config struct {
 	DiscordWelcomeMessage   string
 
 	// RSS
-	RSSEnabled      bool
+	RSSEnabled       bool
 	RSSCheckInterval time.Duration
 
 	// Web server
@@ -75,9 +79,12 @@ func Load() {
 	rssInterval := 30 * time.Minute // Výchozí interval
 
 	Cfg = Config{
-		MSALClientID:     msClientID,
-		MSALClientSecret: msClientSecret,
-		MSALTenantID:     msTenantID,
+		MSALClientID:         msClientID,
+		MSALClientSecret:     msClientSecret,
+		MSALTenantID:         msTenantID,
+		MSALClientKeyPath:    os.Getenv("MSAL_CLIENT_KEY_PATH"),
+		MSALClientCertPath:   os.Getenv("MSAL_CLIENT_CERT_PATH"),
+		MSALClientThumbprint: os.Getenv("MSAL_CLIENT_CERT_THUMBPRINT"),
 
 		DiscordClientID:        os.Getenv("DISCORD_CLIENT_ID"),
 		DiscordClientSecret:    os.Getenv("DISCORD_CLIENT_SECRET"),
