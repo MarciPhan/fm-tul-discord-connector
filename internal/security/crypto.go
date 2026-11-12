@@ -35,9 +35,13 @@ func GeneratePKCE() (verifier string, challenge string) {
 	raw := GenerateRandomBytes(32)
 	verifier = base64.RawURLEncoding.EncodeToString(raw)
 
+	return verifier, PKCEChallenge(verifier)
+}
+
+// PKCEChallenge vypocte code_challenge (S256) z existujiciho code_verifier
+func PKCEChallenge(verifier string) string {
 	h := sha256.Sum256([]byte(verifier))
-	challenge = base64.RawURLEncoding.EncodeToString(h[:])
-	return verifier, challenge
+	return base64.RawURLEncoding.EncodeToString(h[:])
 }
 
 // ConstantTimeCompare overi shodu retezcu bez moznosti timing-attacku
