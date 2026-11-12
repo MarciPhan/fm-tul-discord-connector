@@ -79,6 +79,9 @@ else
     missing+=("MSAL_CLIENT_KEY_PATH (nebo MSAL_CLIENT_SECRET)")
   fi
 fi
+for v in DISCORD_VERIFIED_ID DISCORD_FM_STUDENT_ID DISCORD_FM_STAFF_ID; do
+  [ "$(get $v)" != "123456789012345678" ] || warn "$v je stále vzorová hodnota z .env.example - nastavte skutečné ID role (nebo nechte prázdné a nastavte ji přes /setup)."
+done
 [ ${#missing[@]} -eq 0 ] || die "V .env chybí nebo jsou nevyplněné: ${missing[*]}"
 [ "$(get ENABLE_DEV_MOCK | tr A-Z a-z)" != "true" ] || warn "ENABLE_DEV_MOCK=true v .env (compose ho v produkci přepíše na false)."
 ok ".env zkontrolován"
@@ -88,12 +91,24 @@ if [ "$BUILD" -eq 1 ]; then info "Build image..."; "${COMPOSE[@]}" build; fi
 info "Spouštím kontejner..."
 "${COMPOSE[@]}" up -d --remove-orphans
 
-# 4. Health check (jakákoli HTTP odpověď = server žije)
+# 4. Health check (jakákoli HTTP odpověď = server žije). Bez závislosti na curl: curl -> wget -> čistý bash.
+http_code() {
+  local url=$1 hp host port_ out
+  if command -v curl >/dev/null 2>&1; then
+    curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$url" || true
+  elif command -v wget >/dev/null 2>&1; then
+    out=$(wget -S -O /dev/null --timeout=3 --tries=1 "$url" 2>&1 || true)
+    echo "$out" | awk '/^ *HTTP\/[0-9.]+ [0-9][0-9][0-9]/{c=$2} END{print (c==""?"000":c)}'
+  else
+    hp=${url#http://}; hp=${hp%%/*}; host=${hp%%:*}; port_=${hp##*:}
+    if timeout 3 bash -c "exec 3<>/dev/tcp/$host/$port_" 2>/dev/null; then echo 200; else echo 000; fi
+  fi
+}
 port=$(get PORT); port=${port:-8000}
 info "Čekám na odpověď http://127.0.0.1:$port/ ..."
 up=0
 for _ in $(seq 1 30); do
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://127.0.0.1:$port/" || true)
+  code=$(http_code "http://127.0.0.1:$port/")
   if [ "$code" != "000" ] && [ -n "$code" ]; then up=1; break; fi
   state=$("${COMPOSE[@]}" ps --status exited -q 2>/dev/null || true)
   [ -z "$state" ] || die "Kontejner skončil (viz log výše)."
