@@ -17,7 +17,7 @@ var Server *http.Server
 // Setup registruje HTTP handlery a spusti server
 func Setup() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", HandleIndex)
+	mux.HandleFunc("GET /{$}", HandleIndex) // jen presne "/", jinak by catch-all (napr. /favicon.ico) prepisoval OAuth state
 	mux.HandleFunc("GET /msal", HandleMSAL)
 	mux.HandleFunc("GET /discord", HandleDiscord)
 	mux.HandleFunc("GET /mock-msal", HandleMockMSAL)
