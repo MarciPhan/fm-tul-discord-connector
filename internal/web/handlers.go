@@ -195,6 +195,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 	var tokenRes struct {
 		AccessToken string `json:"access_token"`
 		TokenType   string `json:"token_type"`
+		IDToken     string `json:"id_token"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&tokenRes); err != nil || tokenRes.AccessToken == "" {
 		http.Error(w, "Neplatná odpověď z Microsoft TUL.", http.StatusBadGateway)
@@ -245,8 +246,9 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := security.DetermineRole(profile.JobTitle, profile.EmployeeType, email)
-	log.Printf("MS profil %s: jobTitle=%q employeeType=%q department=%q -> %s", email, profile.JobTitle, profile.EmployeeType, profile.Department, role)
+	tokenRoles := security.IDTokenRoles(tokenRes.IDToken)
+	role := security.DetermineRole(tokenRoles, profile.JobTitle, profile.EmployeeType, email)
+	log.Printf("MS profil %s: roles=%v jobTitle=%q employeeType=%q department=%q -> %s", email, tokenRoles, profile.JobTitle, profile.EmployeeType, profile.Department, role)
 
 	sess.SetStudent(&storage.Student{
 		MicrosoftID: profile.ID,
