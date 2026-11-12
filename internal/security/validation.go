@@ -1,6 +1,8 @@
 package security
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"unicode"
 )
@@ -53,11 +55,44 @@ func SanitizeNickname(name string) string {
 	return res
 }
 
-// DetermineRole urcuje, zda jde o studenta ci zamestnance. Studentske ucty v tenantu
-// zpravidla nemaji vyplnenou pozici (jobTitle), zamestnanci ji maji (napr. "Ing.",
-// "Technik", "Vedouci ustavu"), proto za zamestnance povazujeme kazdeho, kdo ma
-// neprazdnou pozici, ktera neobsahuje "student"/"doktorand", nebo employeeType zamestnance.
-func DetermineRole(jobTitle, employeeType, email string) string {
+// IDTokenRoles vrati hodnoty claimu "roles" z ID tokenu. Token prijde primo z token
+// endpointu Microsoftu po TLS (code flow), proto podpis neověřujeme (OIDC Core 3.1.3.7).
+func IDTokenRoles(idToken string) []string {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return nil
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil
+	}
+	var claims struct {
+		Roles []string `json:"roles"`
+	}
+	if json.Unmarshal(payload, &claims) != nil {
+		return nil
+	}
+	return claims.Roles
+}
+
+// DetermineRole urcuje, zda jde o studenta ci zamestnance. Prednost ma claim "roles"
+// z Entra ID (TUL predava role employee / student). Jako zaloha slouzi profil z Graph:
+// studentske ucty zpravidla nemaji vyplnenou pozici (jobTitle), zamestnanci ji maji,
+// proto za zamestnance povazujeme kazdeho s neprazdnou pozici bez "student"/"doktorand"
+// nebo s employeeType zamestnance.
+func DetermineRole(tokenRoles []string, jobTitle, employeeType, email string) string {
+	for _, r := range tokenRoles {
+		switch strings.ToLower(strings.TrimSpace(r)) {
+		case "employee", "staff", "zamestnanec", "zaměstnanec":
+			return "Zaměstnanec FM"
+		}
+	}
+	for _, r := range tokenRoles {
+		if strings.EqualFold(strings.TrimSpace(r), "student") {
+			return "Student FM"
+		}
+	}
+
 	lowerTitle := strings.ToLower(strings.TrimSpace(jobTitle))
 	lowerType := strings.ToLower(strings.TrimSpace(employeeType))
 	lowerEmail := strings.ToLower(email)
@@ -68,8 +103,6 @@ func DetermineRole(jobTitle, employeeType, email string) string {
 	if lowerTitle != "" && !strings.Contains(lowerTitle, "student") && !strings.Contains(lowerTitle, "doktorand") {
 		return "Zaměstnanec FM"
 	}
-
-	// Fallback: kontrola emailove adresy
 	if strings.Contains(lowerEmail, "zamestnanec") {
 		return "Zaměstnanec FM"
 	}
