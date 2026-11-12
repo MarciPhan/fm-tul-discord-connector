@@ -446,110 +446,187 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 // --- HTML TEMPLATE ---
 
-const indexTemplate = `
-	<!DOCTYPE html>
-	<html lang="cs">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>FM TUL - Discord Connector</title>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-		<style>
-			* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-			body { background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-			.card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; width: 100%; max-width: 500px; padding: 36px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-			.badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 14px; background: #0284c7; color: white; }
-			h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-			p.desc { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
-			
-			.steps { display: flex; gap: 8px; margin-bottom: 24px; }
-			.step { flex: 1; height: 4px; border-radius: 2px; background: #334155; }
-			.step.active { background: #38bdf8; }
-			.step.completed { background: #10b981; }
+const indexTemplate = `<!DOCTYPE html>
+<html lang="cs">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="light">
+	<title>Ověření pro Discord FM TUL</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--paper: #f7f4ef;
+			--ink: #1b1a18;
+			--muted: #5e5a54;
+			--rule: #d8d1c6;
+			--orange: #e8751a;
+			--orange-ink: #a64705;
+			--discord: #4752c4;
+			--discord-hover: #3b45ab;
+		}
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		html { -webkit-text-size-adjust: 100%; }
+		body {
+			background: var(--paper);
+			color: var(--ink);
+			font-family: 'IBM Plex Sans', system-ui, sans-serif;
+			font-size: 17px;
+			line-height: 1.55;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			border-top: 8px solid var(--orange);
+		}
+		::selection { background: var(--orange); color: var(--ink); }
+		a { color: inherit; text-underline-offset: 0.2em; }
+		:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
 
-			.btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px 20px; border-radius: 10px; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; border: none; text-align: center; }
-			.btn-ms { background: #2563eb; color: white; margin-bottom: 12px; }
-			.btn-ms:hover { background: #1d4ed8; }
-			.btn-discord { background: #5865F2; color: white; margin-bottom: 12px; }
-			.btn-discord:hover { background: #4752c4; }
-			.btn-success { background: #10b981; color: white; }
-			.btn-success:hover { background: #059669; }
-			
-			.info-box { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 20px; font-size: 14px; }
-			.info-label { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-			.info-value { color: #f8fafc; font-weight: 600; }
-			
-			.dev-tools { margin-top: 24px; padding-top: 18px; border-top: 1px solid #334155; display: flex; justify-content: space-between; font-size: 12px; }
-			.dev-tools a { color: #64748b; text-decoration: none; }
-			.dev-tools a:hover { color: #94a3b8; text-decoration: underline; }
-		</style>
-	</head>
-	<body>
-		<div class="card">
-			<span class="badge">FM TUL • Zabezpečený konektor</span>
-			<h1>Propojení identity</h1>
-			<p class="desc">Automatické ověření studentů a zaměstnanců Fakulty mechatroniky TUL a udělení rolí na Discordu.</p>
+		.wrap { width: 100%; max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
+		header { padding: 1.75rem 0 0; }
+		.org { font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
+		.org strong { display: block; color: var(--ink); font-weight: 600; }
 
-			<div class="steps">
-				<div class="step {{if .Session}}completed{{else}}active{{end}}"></div>
-				<div class="step {{if and .Session .Session.DiscordID}}completed{{else if .Session}}active{{end}}"></div>
-			</div>
+		main { flex: 1; padding: 3.5rem 0 3rem; }
+		h1 {
+			font-size: clamp(2rem, 6vw, 3.1rem);
+			line-height: 1.08;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			text-wrap: balance;
+			max-width: 18ch;
+		}
+		.lead { margin-top: 1.1rem; max-width: 34rem; color: var(--muted); text-wrap: pretty; }
 
-			{{if not .Session}}
-				<!-- KROK 1: PŘIHLÁŠENÍ MICROSOFT -->
-				<a href="{{.MSURL}}" class="btn btn-ms">
-					<svg width="18" height="18" viewBox="0 0 21 21" fill="none">
-						<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-						<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-						<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-						<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-					</svg>
-					1. Přihlásit se přes Microsoft TUL
-				</a>
-			{{else if not .Session.DiscordID}}
-				<!-- KROK 2: PŘIHLÁŠENÍ DISCORD -->
-				<div class="info-box">
-					<div class="info-label">Ověřený školní účet</div>
-					<div class="info-value">{{.Session.Name}} ({{.Session.Email}})</div>
-					<div style="color: #38bdf8; font-size: 13px; margin-top: 4px;">{{.Session.Role}}</div>
-				</div>
+		ol.steps { list-style: none; margin-top: 3rem; border-top: 1px solid var(--rule); }
+		.step { display: grid; grid-template-columns: 2.75rem 1fr; gap: 0 0.5rem; padding: 1.5rem 0; border-bottom: 1px solid var(--rule); }
+		.mark {
+			width: 1.9rem; height: 1.9rem; border-radius: 50%;
+			border: 2px solid var(--rule); color: var(--muted);
+			display: grid; place-items: center;
+			font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums;
+			margin-top: 0.1rem;
+		}
+		.step h2 { font-size: 1.2rem; line-height: 1.3; font-weight: 600; }
+		.step p { margin-top: 0.3rem; color: var(--muted); font-size: 0.98rem; max-width: 32rem; }
+		.step.todo h2 { color: var(--muted); font-weight: 500; }
+		.step.current .mark { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+		.step.done .mark { border-color: var(--orange); background: var(--orange); color: var(--ink); }
 
-				<a href="{{.DiscordURL}}" class="btn btn-discord">
-					<svg width="20" height="16" viewBox="0 0 127.14 96.36" fill="currentColor">
-						<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
-					</svg>
-					2. Propojit s Discord účtem
-				</a>
-			{{else}}
-				<!-- KROK 3: HOTOVO -->
-				<div class="info-box" style="border-left: 4px solid #10b981;">
-					<div class="info-label">Úspěšně propojeno a ověřeno</div>
-					<div class="info-value">{{.Session.Name}}</div>
-					<div style="color: #38bdf8; font-size: 13px; margin-top: 4px;">Role: {{.Session.Role}}</div>
-					<div style="color: #94a3b8; font-size: 13px; margin-top: 2px;">Role na Discordu byly automaticky uděleny.</div>
-				</div>
+		.who { margin-top: 0.6rem; font-size: 0.98rem; }
+		.who b { font-weight: 600; }
+		.who span { color: var(--orange-ink); font-weight: 600; }
 
-				<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn btn-success">
-					Přejít na Discord Server
-				</a>
-			{{end}}
+		.btn {
+			display: inline-flex; align-items: center; gap: 0.7rem;
+			margin-top: 1.1rem; padding: 0.8rem 1.4rem;
+			border-radius: 4px; border: 2px solid transparent;
+			font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.2;
+			text-decoration: none; cursor: pointer;
+			transition: background-color 0.15s ease-out, border-color 0.15s ease-out, transform 0.15s ease-out;
+		}
+		.btn:active { transform: translateY(1px); }
+		.btn svg { flex: none; }
+		.btn-ms { background: var(--ink); color: var(--paper); }
+		.btn-ms:hover { background: #000; }
+		.btn-discord { background: var(--discord); color: #fff; }
+		.btn-discord:hover { background: var(--discord-hover); }
+		.btn-done { background: var(--orange); color: var(--ink); }
+		.btn-done:hover { background: #f08a3a; }
 
-			<div class="dev-tools">
-				<div>
-					{{if .EnableDevMock}}
-						<a href="/mock-msal">Simulovat MS</a> • <a href="/mock-discord">Simulovat Discord</a>
-					{{else}}
-						<span style="color: #475569;">Produkční zabezpečený režim</span>
-					{{end}}
-				</div>
-				<div>
-					{{if .Session}}<a href="/logout">Odhlásit</a>{{end}}
-				</div>
-			</div>
+		footer { border-top: 1px solid var(--rule); padding: 1.25rem 0 2rem; font-size: 0.85rem; color: var(--muted); }
+		footer .wrap { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-content: space-between; }
+		footer p { max-width: 34rem; }
+		footer a:hover { color: var(--ink); }
+
+		@media (max-width: 30rem) {
+			body { font-size: 16px; }
+			main { padding-top: 2.5rem; }
+			.btn { width: 100%; justify-content: center; }
+		}
+		@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+	</style>
+</head>
+<body>
+	<header>
+		<div class="wrap">
+			<p class="org"><strong>Fakulta mechatroniky, informatiky a mezioborových studií</strong>Technická univerzita v Liberci</p>
 		</div>
-	</body>
-	</html>
-	`
+	</header>
+
+	<main>
+		<div class="wrap">
+			<h1>Ověření pro Discord FM TUL</h1>
+			<p class="lead">Přihlas se školním účtem, propoj ho s Discordem a na fakultním serveru dostaneš své role. Stačí to udělat jednou.</p>
+
+			<ol class="steps">
+				<li class="step {{if .Session}}done{{else}}current{{end}}">
+					<span class="mark" aria-hidden="true">{{if .Session}}<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}1{{end}}</span>
+					<div>
+						<h2>Školní účet</h2>
+						{{if not .Session}}
+							<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz.</p>
+							<a href="{{.MSURL}}" class="btn btn-ms">
+								<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+									<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+									<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+									<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+									<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+								</svg>
+								Přihlásit se přes Microsoft TUL
+							</a>
+						{{else}}
+							<p class="who"><b>{{.Session.Name}}</b> ({{.Session.Email}}) &middot; <span>{{.Session.Role}}</span></p>
+						{{end}}
+					</div>
+				</li>
+
+				<li class="step {{if not .Session}}todo{{else if .Session.DiscordID}}done{{else}}current{{end}}">
+					<span class="mark" aria-hidden="true">{{if and .Session .Session.DiscordID}}<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}2{{end}}</span>
+					<div>
+						<h2>Discord</h2>
+						{{if and .Session (not .Session.DiscordID)}}
+							<p>Propojíme účet s tvým Discordem a přidáme tě na server.</p>
+							<a href="{{.DiscordURL}}" class="btn btn-discord">
+								<svg width="20" height="16" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+									<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
+								</svg>
+								Propojit s Discordem
+							</a>
+						{{else if .Session}}
+							<p class="who">Účet je propojený.</p>
+						{{end}}
+					</div>
+				</li>
+
+				<li class="step {{if and .Session .Session.DiscordID}}current{{else}}todo{{end}}">
+					<span class="mark" aria-hidden="true">3</span>
+					<div>
+						<h2>Hotovo</h2>
+						{{if and .Session .Session.DiscordID}}
+							<p>Role ti byly přiděleny automaticky. Fakultní kanály se ti odemkly.</p>
+							<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn btn-done">Otevřít server na Discordu</a>
+						{{end}}
+					</div>
+				</li>
+			</ol>
+		</div>
+	</main>
+
+	<footer>
+		<div class="wrap">
+			<p>Ukládáme jméno, školní e-mail, roli (student nebo zaměstnanec) a ID tvého Discord účtu. Jeden školní účet jde propojit s jedním Discordem.</p>
+			<p>
+				{{if .EnableDevMock}}<a href="/mock-msal">Simulovat MS</a> &middot; <a href="/mock-discord">Simulovat Discord</a>{{end}}
+				{{if .Session}}{{if .EnableDevMock}} &middot; {{end}}<a href="/logout">Odhlásit se</a>{{end}}
+			</p>
+		</div>
+	</footer>
+</body>
+</html>
+`
 
 var (
 	signerOnce sync.Once
