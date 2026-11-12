@@ -104,6 +104,7 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		"InviteURL":     config.Cfg.DiscordInviteURL,
 		"EnableDevMock": config.Cfg.EnableDevMock,
 	}
+	data["Cmd"], data["Channels"] = terminalLines(randomChannels(channelsShown))
 
 	tmpl := template.Must(template.New("index").Parse(indexTemplate))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -452,176 +453,396 @@ const indexTemplate = `<!DOCTYPE html>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="color-scheme" content="light">
+	<meta name="theme-color" content="#ea7603">
 	<title>Ověření pro Discord FM TUL</title>
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<script src="/static/fit.js" defer></script>
+	<link rel="preload" href="/static/fonts/TULMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="/static/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
 	<style>
+		@font-face { font-family: 'TUL Mono'; src: url('/static/fonts/TULMono-Regular.woff2') format('woff2'); font-weight: 400 500; font-style: normal; font-display: swap; }
+		@font-face { font-family: 'TUL Mono'; src: url('/static/fonts/TULMono-Bold.woff2') format('woff2'); font-weight: 600 800; font-style: normal; font-display: swap; }
+		@font-face { font-family: 'Inter'; src: url('/static/fonts/Inter-Regular.woff2') format('woff2'); font-weight: 400 500; font-style: normal; font-display: swap; }
+		@font-face { font-family: 'Inter'; src: url('/static/fonts/Inter-Bold.woff2') format('woff2'); font-weight: 600 800; font-style: normal; font-display: swap; }
 		:root {
-			--paper: #f7f4ef;
-			--ink: #1b1a18;
-			--muted: #5e5a54;
-			--rule: #d8d1c6;
-			--orange: #e8751a;
-			--orange-ink: #a64705;
-			--discord: #4752c4;
-			--discord-hover: #3b45ab;
+			--bg: #fbf9f6;
+			--surface: #ffffff;
+			--ink: #1a1916;
+			--muted: #67625a;
+			--line: #e7e2d9;
+			--orange: #ea7603;
+			--orange-soft: #fdebd9;
+			--orange-deep: #8f3f04;
+			--ease: cubic-bezier(0.16, 1, 0.3, 1);
+			--sans: 'Inter', system-ui, sans-serif;
+			--mono: 'TUL Mono', ui-monospace, monospace;
 		}
 		* { margin: 0; padding: 0; box-sizing: border-box; }
-		html { -webkit-text-size-adjust: 100%; }
+		html { font-size: 16px; -webkit-text-size-adjust: 100%; scrollbar-width: none; }
+		::-webkit-scrollbar { display: none; }
+		::selection { background: var(--orange); color: var(--ink); }
+		:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+		a { color: inherit; text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+
 		body {
-			background: var(--paper);
+			background: var(--bg);
 			color: var(--ink);
-			font-family: 'IBM Plex Sans', system-ui, sans-serif;
-			font-size: 17px;
+			font-family: var(--sans);
+			font-size: 1.03rem;
 			line-height: 1.55;
 			min-height: 100vh;
-			display: flex;
-			flex-direction: column;
-			border-top: 8px solid var(--orange);
+			min-height: 100dvh;
+			display: flex; flex-direction: column;
+			position: relative; overflow-x: hidden;
+			caret-color: var(--orange);
 		}
-		::selection { background: var(--orange); color: var(--ink); }
-		a { color: inherit; text-underline-offset: 0.2em; }
-		:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
+		body { --turn: 0deg; }
+		body.s2 { --turn: 30deg; } body.s3 { --turn: 60deg; }
 
-		.wrap { width: 100%; max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
-		header { padding: 1.75rem 0 0; }
-		.org { font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
-		.org strong { display: block; color: var(--ink); font-weight: 600; }
+		.bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+		.watermark { position: absolute; z-index: 0; right: -13rem; top: -11rem; width: min(54rem, 85vw); height: auto; opacity: 0.14; pointer-events: none; transform: rotate(var(--turn)); animation: click 1.4s var(--ease) 0.2s backwards; }
+		.top, main, footer { position: relative; z-index: 1; }
+		.wrap { width: 100%; max-width: 72rem; margin: 0 auto; padding: 0 2rem; }
 
-		main { flex: 1; padding: 3.5rem 0 3rem; }
+		.top { padding: clamp(0.75rem, 2.4vh, 1.6rem) 0; }
+		.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+		.brand { display: block; text-decoration: none; font: 500 0.78rem/1.35 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--orange-deep); }
+		.brand span { display: block; }
+		.brand u { text-decoration-thickness: 2px; text-underline-offset: 0.18em; }
+		.brand { display: flex; align-items: center; gap: 0.85rem; }
+		.brand img { width: 2.9rem; height: 2.9rem; flex: none; display: block; }
+		.brand-words { display: block; }
+		.medal { position: relative; width: clamp(8rem, 24vh, 13rem); aspect-ratio: 1; margin-top: clamp(1rem, 3vh, 2.2rem); animation: rise 0.9s var(--ease) 0.3s backwards; }
+		.medal .rays { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(var(--turn)); animation: click 1.2s var(--ease) 0.4s backwards; }
+		.medal .photo { position: absolute; inset: 22%; width: 56%; height: 56%; border-radius: 50%; object-fit: cover; box-shadow: 0 10px 24px -12px rgba(26, 25, 22, 0.5); }
+		.chlist { margin-top: clamp(0.7rem, 2vh, 1.4rem); max-width: 25rem; }
+		.term { background: var(--ink); color: #efeae0; border-radius: 0.9rem; padding: 0.85rem 1.1rem 0.8rem; font: 400 0.86rem/1.75 var(--mono); letter-spacing: 0; box-shadow: 0 18px 36px -22px rgba(26, 25, 22, 0.7); overflow: hidden; }
+		.tl { display: flex; align-items: baseline; gap: 0.7ch; min-height: 1.75em; animation: show 0.01s linear var(--d, 0s) backwards; }
+		.term .pr { color: var(--orange); }
+		.term .hash { color: #8f897d; }
+		.tx { box-sizing: content-box; display: inline-block; overflow: hidden; white-space: nowrap; width: calc(var(--n) * 1ch); vertical-align: bottom; border-right: 0.55ch solid transparent; animation: type calc(var(--n) * 0.06s) steps(var(--n), end) var(--d) backwards, caret calc(var(--n) * 0.06s) steps(1, end) var(--d) backwards; }
+				.term .st { margin-left: auto; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8f897d; animation: show 0.3s ease-out var(--e) backwards; }
+		.chlist.open .term .st { color: var(--orange); }
+		.term .last { animation-delay: 0.3s; }
+		.term .cursor { margin-left: 0; background: var(--orange); }
+		.hint { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
+		.cmd { font: 500 0.78rem/1 var(--mono); padding: 0.2rem 0.45rem; border-radius: 0.35rem; background: #e9ebfd; color: #3b45ab; }
+		.role { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.55rem; padding: 0.22rem 0.6rem 0.22rem 0.5rem; border: 1px solid var(--line); border-radius: 0.4rem; font-size: 0.82rem; font-weight: 500; color: var(--ink); background: #faf8f4; }
+		.role i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--orange); flex: none; }
+		.lk { position: relative; width: 14px; height: 14px; flex: none; color: #8e8a82; }
+		.chlist.open .lk { color: var(--orange-deep); }
+		.lk svg { position: absolute; inset: 0; }
+		.lk-o { opacity: 0; }
+		.chlist.open .lk-c { animation: lock-out 0.3s var(--ease) calc(1.1s + var(--i) * 0.16s) forwards; }
+		.chlist.open .lk-o { opacity: 1; animation: lock-in 0.4s var(--ease) calc(1.2s + var(--i) * 0.16s) backwards; }
+		body.s3 .medal::after { content: ""; position: absolute; inset: 22%; border: 2px solid var(--orange); border-radius: 50%; pointer-events: none; animation: ripple 1.8s ease-out 0.9s backwards; }
+		/* spoje pod formulářem: postup jako signál */
+		.side { display: flex; flex-direction: column; min-width: 0; }
+		.trace { display: block; width: 100%; max-width: 30rem; margin: clamp(0.5rem, 1.6vh, 1.2rem) auto 0; overflow: visible; animation: rise 0.9s var(--ease) 0.3s backwards; }
+		.trace path { fill: none; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+		.trace .base { stroke: #d8d1c4; }
+		.trace .lit { stroke: var(--orange); display: none; }
+		.trace .lit.on { display: block; stroke-dasharray: 100 100; animation: wire 1.2s var(--ease) 0.5s backwards; }
+		.trace .pad { fill: var(--bg); stroke: #d8d1c4; stroke-width: 3.5; }
+		.trace .pad.cur { stroke: var(--orange); }
+		.trace .pad.on { fill: var(--orange); stroke: var(--orange); }
+		.trace text { font: 500 10.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--muted); }
+		.trace text.on { fill: var(--ink); }
+		.out { font-size: 0.9rem; color: var(--muted); white-space: nowrap; }
+		.out:hover { color: var(--ink); }
+
+		main { flex: 1; display: flex; align-items: center; padding: clamp(0.5rem, 2.5vh, 2.5rem) 0 clamp(1rem, 4vh, 3.5rem); }
+		main .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 4rem; align-items: center; }
+
 		h1 {
-			font-size: clamp(2rem, 6vw, 3.1rem);
-			line-height: 1.08;
-			font-weight: 700;
-			letter-spacing: -0.02em;
-			text-wrap: balance;
-			max-width: 18ch;
+			font-family: var(--mono); font-size: clamp(1.9rem, min(4.2vw, 7.5vh), 4rem); line-height: 1.08; font-weight: 700; letter-spacing: -0.035em;
+			text-wrap: balance; animation: rise 0.9s var(--ease) 0.05s backwards;
 		}
-		.lead { margin-top: 1.1rem; max-width: 34rem; color: var(--muted); text-wrap: pretty; }
+		h1 mark {
+			color: inherit; background: none;
+			background-image: linear-gradient(transparent 66%, rgba(236, 122, 28, 0.38) 66% 92%, transparent 92%);
+			padding: 0 0.04em; margin: 0 -0.04em;
+		}
+		.lead { margin-top: clamp(0.7rem, 2vh, 1.5rem); max-width: 29rem; font-size: 1.12rem; color: var(--muted); text-wrap: pretty; animation: rise 0.9s var(--ease) 0.15s backwards; }
+		.facts { margin-top: clamp(0.8rem, 2.4vh, 2.2rem); display: flex; flex-wrap: wrap; gap: 0.6rem; animation: rise 0.9s var(--ease) 0.25s backwards; }
+		.facts li { list-style: none; font-size: 0.84rem; padding: 0.4rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, 0.7); color: var(--muted); }
 
-		ol.steps { list-style: none; margin-top: 3rem; border-top: 1px solid var(--rule); }
-		.step { display: grid; grid-template-columns: 2.75rem 1fr; gap: 0 0.5rem; padding: 1.5rem 0; border-bottom: 1px solid var(--rule); }
-		.mark {
-			width: 1.9rem; height: 1.9rem; border-radius: 50%;
-			border: 2px solid var(--rule); color: var(--muted);
-			display: grid; place-items: center;
-			font-size: 0.9rem; font-weight: 600; font-variant-numeric: tabular-nums;
-			margin-top: 0.1rem;
+		/* panel s kroky */
+		.panel {
+			background: var(--surface); border: 1px solid var(--line); border-radius: 1.75rem;
+			box-shadow: 0 1px 2px rgba(26, 25, 22, 0.04), 0 30px 60px -28px rgba(60, 40, 10, 0.28);
+			padding: 1.1rem; animation: rise 0.9s var(--ease) 0.2s backwards;
 		}
-		.step h2 { font-size: 1.2rem; line-height: 1.3; font-weight: 600; }
-		.step p { margin-top: 0.3rem; color: var(--muted); font-size: 0.98rem; max-width: 32rem; }
+		ol.steps { list-style: none; }
+		.step { --sy: clamp(0.65rem, 1.8vh, 1.15rem); position: relative; display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 0 1.1rem; padding: var(--sy) 1.2rem calc(var(--sy) + 0.1rem); border-radius: 1.2rem; transition: background-color 0.3s var(--ease); }
+		.step.current { background: #fdf4ea; }
+		.node {
+			width: 2.4rem; height: 2.4rem; border-radius: 50%; display: grid; place-items: center;
+			border: 2px solid var(--line); background: var(--surface); color: var(--muted);
+			font: 500 0.85rem/1 var(--mono); position: relative; z-index: 1;
+		}
+		.step.current .node { border-color: var(--orange); color: var(--ink); background: var(--surface); }
+		.step.done .node { border-color: var(--orange); background: var(--orange); color: var(--ink); }
+		/* spojnice mezi uzly */
+		.step:not(:last-child)::before {
+			content: ""; position: absolute; left: calc(1.2rem + 1.2rem - 1px); top: calc(var(--sy) + 2.4rem); bottom: calc(var(--sy) * -1); width: 2px; background: var(--line); z-index: 0;
+		}
+		.step.done:not(:last-child)::before { background: var(--orange); animation: grow 0.7s var(--ease) 0.5s backwards; transform-origin: top; }
+
+		.head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 2.4rem; }
+		.step h2 { font-size: 1.22rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
 		.step.todo h2 { color: var(--muted); font-weight: 500; }
-		.step.current .mark { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-		.step.done .mark { border-color: var(--orange); background: var(--orange); color: var(--ink); }
-
-		.who { margin-top: 0.6rem; font-size: 0.98rem; }
+		.chip { font: 500 0.7rem/1 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; padding: 0.4rem 0.6rem; border-radius: 999px; white-space: nowrap; }
+		.step.current .chip { background: var(--orange-soft); color: var(--orange-deep); }
+		.step.done .chip { background: #eef6ec; color: #2c5b24; }
+		.step.todo .chip { color: var(--muted); border: 1px solid var(--line); }
+		.step p { color: var(--muted); font-size: 0.97rem; max-width: 24rem; text-wrap: pretty; }
+		.step.current p { color: #4a463f; }
+		.body { grid-column: 2; margin-top: -0.2rem; }
+		.step:not(.current) .body p:not(.who) { display: none; }
+		.step:not(.current) .body { margin-top: 0; }
+		.step:not(.current) .who { font-size: 0.9rem; }
+		.who { color: var(--ink) !important; }
 		.who b { font-weight: 600; }
-		.who span { color: var(--orange-ink); font-weight: 600; }
 
 		.btn {
-			display: inline-flex; align-items: center; gap: 0.7rem;
-			margin-top: 1.1rem; padding: 0.8rem 1.4rem;
-			border-radius: 4px; border: 2px solid transparent;
-			font: inherit; font-size: 1rem; font-weight: 600; line-height: 1.2;
-			text-decoration: none; cursor: pointer;
-			transition: background-color 0.15s ease-out, border-color 0.15s ease-out, transform 0.15s ease-out;
+			display: inline-flex; align-items: center; gap: 0.75rem;
+			margin-top: clamp(0.8rem, 1.8vh, 1.15rem); padding: 0.9rem 1.25rem 0.9rem 1.3rem;
+			border-radius: 0.95rem; border: 0; background: var(--ink); color: #fff;
+			font: 600 1rem/1.15 var(--sans); letter-spacing: -0.005em; text-decoration: none; cursor: pointer;
+			box-shadow: 0 10px 22px -10px rgba(26, 25, 22, 0.55);
+			transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 		}
-		.btn:active { transform: translateY(1px); }
 		.btn svg { flex: none; }
-		.btn-ms { background: var(--ink); color: var(--paper); }
-		.btn-ms:hover { background: #000; }
-		.btn-discord { background: var(--discord); color: #fff; }
-		.btn-discord:hover { background: var(--discord-hover); }
-		.btn-done { background: var(--orange); color: var(--ink); }
-		.btn-done:hover { background: #f08a3a; }
+		.btn .arrow { transition: transform 0.3s var(--ease); }
+		.btn:hover { background: var(--orange); color: var(--ink); box-shadow: 0 14px 26px -12px rgba(236, 122, 28, 0.7); }
+		.btn:hover .arrow { transform: translateX(4px); }
+		.btn-ms { background: #2f2f2f; color: #fff; }
+		.btn-ms:hover { background: #1f1f1f; color: #fff; box-shadow: 0 14px 26px -12px rgba(47, 47, 47, 0.7); }
+		.btn-discord { background: #5865f2; color: #fff; box-shadow: 0 10px 22px -10px rgba(88, 101, 242, 0.7); }
+		.btn-discord:hover { background: #4752c4; color: #fff; box-shadow: 0 14px 26px -12px rgba(88, 101, 242, 0.8); }
+		.btn:active { transform: translateY(1px); box-shadow: 0 4px 10px -6px rgba(26, 25, 22, 0.5); }
 
-		footer { border-top: 1px solid var(--rule); padding: 1.25rem 0 2rem; font-size: 0.85rem; color: var(--muted); }
-		footer .wrap { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-content: space-between; }
-		footer p { max-width: 34rem; }
+		.console { margin: 0.4rem 1.2rem 0.5rem; padding-top: 1rem; border-top: 1px solid var(--line); font: 400 0.8rem/1.6 var(--mono); color: var(--muted); }
+		.console .ln { animation: line 0.5s var(--ease) var(--d, 0s) backwards; }
+		.console b { color: var(--ink); font-weight: 500; }
+		.cursor { display: inline-block; width: 0.55em; height: 1.05em; background: var(--orange); vertical-align: -0.2em; margin-left: 0.25rem; border-radius: 1px; animation: blink 1.1s steps(1) infinite; }
+
+		footer { padding: clamp(0.5rem, 1.6vh, 1.5rem) 0 clamp(0.8rem, 2vh, 2.2rem); font-size: 0.8rem; line-height: 1.4; color: var(--muted); }
+		footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem; }
+		footer p { max-width: 44rem; }
+		footer .legal span { display: block; text-wrap: balance; }
 		footer a:hover { color: var(--ink); }
 
-		@media (max-width: 30rem) {
-			body { font-size: 16px; }
-			main { padding-top: 2.5rem; }
-			.btn { width: 100%; justify-content: center; }
+		@keyframes wire { from { stroke-dasharray: 0 100; } to { stroke-dasharray: 100 100; } }
+		@keyframes caret { from, to { border-right-color: var(--orange); } }
+		@keyframes type { from { width: 0; } }
+		@keyframes show { from { opacity: 0; } }
+		@keyframes line { from { opacity: 0; transform: translateX(-8px); } }
+		@keyframes ripple { from { opacity: 0.9; transform: scale(0.6); } to { opacity: 0; transform: scale(2.4); } }
+		@keyframes lock-out { to { opacity: 0; transform: scale(0.6); } }
+		@keyframes lock-in { from { opacity: 0; transform: translateY(2px) scale(0.6); } }
+		@keyframes slide { from { opacity: 0; transform: translateX(-14px); } }
+		.fit body { height: 100vh; height: 100dvh; overflow: hidden; }
+		@keyframes rise { from { opacity: 0; transform: translateY(22px); } }
+		@keyframes grow { from { transform: scaleY(0); } }
+		@keyframes click { from { transform: rotate(calc(var(--turn) - 45deg)); } }
+		@keyframes blink { 50% { opacity: 0; } }
+
+		@media (max-width: 62rem) {
+			main .wrap { grid-template-columns: 1fr; gap: 2.5rem; }
+					}
+		@media (max-height: 860px) { .medal { display: none; } }
+		@media (max-height: 760px) {
+			.console { display: none; }
+			.panel { padding: 0.6rem; }
+			.chlist li { padding: 0.28rem 0.7rem; }
+			.hint { margin-top: 0.5rem; }
+			h1 { font-size: clamp(1.7rem, min(4vw, 6.6vh), 3.2rem); }
 		}
-		@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+		@media (max-height: 640px) {
+			.hint, .lead { display: none; }
+			.cat { margin-bottom: 0.3rem; }
+			.chlist li { padding: 0.2rem 0.7rem; font-size: 0.86rem; }
+			.step { --sy: 0.55rem; }
+		}
+		@media (max-height: 500px) {
+			.chlist, .trace { display: none; }
+		}
+		@media (max-width: 34rem) {
+			body { font-size: 16px; }
+			.facts, .medal { display: none; }
+			.brand img { width: 2.3rem; height: 2.3rem; }
+			.brand { gap: 0.65rem; }
+			.brand-words { font-size: 0.6rem; line-height: 1.3; letter-spacing: 0.02em; }
+			.brand-words span { display: inline; }
+			.btn { padding: 0.85rem 1rem; gap: 0.6rem; font-size: 0.97rem; }
+			.btn .arrow { display: none; }
+			.top { padding: 0.7rem 0; }
+			main .wrap { gap: 1.4rem; }
+			.lead { font-size: 1rem; margin-top: 0.8rem; }
+			.chlist { margin-top: 0.9rem; }
+			.chlist .hint { display: none; }
+			.term { font-size: 0.72rem; padding: 0.6rem 0.8rem; }
+			.watermark { right: -17rem; top: -9rem; opacity: 0.11; }
+			.wrap { padding: 0 1.1rem; }
+			main { padding: 0.4rem 0 1rem; }
+			.panel { padding: 0.5rem; border-radius: 1.4rem; }
+			.step { grid-template-columns: 2.1rem minmax(0, 1fr); gap: 0 0.8rem; padding: var(--sy) 0.8rem calc(var(--sy) + 0.1rem); }
+			.node { width: 2.1rem; height: 2.1rem; }
+			.step:not(:last-child)::before { left: calc(0.8rem + 1.05rem - 1px); top: calc(var(--sy) + 2.1rem); }
+			.btn { width: 100%; justify-content: center; }
+			.console { margin: 0.4rem 0.8rem 0.5rem; }
+		}
+		@media (max-width: 34rem) and (max-height: 700px) {
+			.chlist, .trace { display: none; }
+			footer { padding-bottom: 0.7rem; }
+			footer .legal { font-size: 0.68rem; }
+			footer .legal span { display: inline; }
+			main .wrap { gap: 1rem; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { animation: none !important; transition: none !important; }
+			.tx { animation: none !important; }
+		}
 	</style>
 </head>
-<body>
-	<header>
+<body class="s{{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}}">
+
+	<div class="bg" aria-hidden="true"><img class="watermark" src="/static/tul-fm-symbol.svg" alt=""></div>
+
+	<header class="top">
 		<div class="wrap">
-			<p class="org"><strong>Fakulta mechatroniky, informatiky a mezioborových studií</strong>Technická univerzita v Liberci</p>
+			<a class="brand" href="/" aria-label="Fakulta mechatroniky, informatiky a mezioborových studií TUL">
+				<img src="/static/tul-fm-symbol.svg" alt="" width="46" height="46">
+				<span class="brand-words"><span>Fakulta mechatroniky,</span> <span>informatiky a mezioborových</span> <span>studií <u>TUL</u></span></span>
+			</a>
+			{{if .Session}}<a class="out" href="/logout">Odhlásit se</a>{{end}}
 		</div>
 	</header>
 
 	<main>
 		<div class="wrap">
-			<h1>Ověření pro Discord FM TUL</h1>
-			<p class="lead">Přihlas se školním účtem, propoj ho s Discordem a na fakultním serveru dostaneš své role. Stačí to udělat jednou.</p>
-
-			<ol class="steps">
-				<li class="step {{if .Session}}done{{else}}current{{end}}">
-					<span class="mark" aria-hidden="true">{{if .Session}}<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}1{{end}}</span>
-					<div>
-						<h2>Školní účet</h2>
-						{{if not .Session}}
-							<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz.</p>
-							<a href="{{.MSURL}}" class="btn btn-ms">
-								<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
-									<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-									<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-									<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-									<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-								</svg>
-								Přihlásit se přes Microsoft TUL
-							</a>
-						{{else}}
-							<p class="who"><b>{{.Session.Name}}</b> ({{.Session.Email}}) &middot; <span>{{.Session.Role}}</span></p>
-						{{end}}
+			<div>
+				{{if not .Session}}
+				<h1>Ověř se <mark>školním účtem</mark></h1>
+				<p class="lead">Přihlas se účtem TUL, propoj ho s Discordem a na fakultním serveru dostaneš své role. Stačí to udělat jednou.</p>
+				{{else if not .Session.DiscordID}}
+				<h1>Školní účet <mark>ověřen</mark></h1>
+				<p class="lead">Jsi poznán jako {{.Session.Role}}. Zbývá propojit Discord a můžeš na server.</p>
+				{{else}}
+				<h1>Ověření <mark>dokončeno</mark></h1>
+				<p class="lead">Role ti byly přiděleny. Fakultní kanály na Discordu se ti odemkly.</p>
+				{{end}}
+				<div class="chlist{{if and .Session .Session.DiscordID}} open{{end}}">
+					<div class="term" role="img" aria-label="Kanály, které se po ověření odemknou">
+						<p class="tl" style="--n:{{.Cmd.N}};--d:{{.Cmd.Delay}};--e:{{.Cmd.End}}"><span class="pr">$</span><span class="tx">{{.Cmd.Name}}</span></p>
+						{{range .Channels}}<p class="tl ch" style="--n:{{.N}};--d:{{.Delay}};--e:{{.End}}"><span class="hash">#</span><span class="tx">{{.Name}}</span><span class="st">{{if and $.Session $.Session.DiscordID}}odemčeno{{else}}zamčeno{{end}}</span></p>
+						{{end}}<p class="tl last"><span class="pr">$</span><span class="cursor" aria-hidden="true"></span></p>
 					</div>
-				</li>
+					<p class="hint">Ověření najdeš na serveru i jako příkaz <span class="cmd">/overit</span></p>
+				</div>
+				<div class="medal" aria-hidden="true">
+					<img class="rays" src="/static/tul-fm-symbol.svg" alt="">
+					<img class="photo" src="/static/fm-optika.jpg" alt="">
+				</div>
+			</div>
 
-				<li class="step {{if not .Session}}todo{{else if .Session.DiscordID}}done{{else}}current{{end}}">
-					<span class="mark" aria-hidden="true">{{if and .Session .Session.DiscordID}}<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}2{{end}}</span>
-					<div>
-						<h2>Discord</h2>
-						{{if and .Session (not .Session.DiscordID)}}
-							<p>Propojíme účet s tvým Discordem a přidáme tě na server.</p>
-							<a href="{{.DiscordURL}}" class="btn btn-discord">
-								<svg width="20" height="16" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
-									<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
-								</svg>
-								Propojit s Discordem
-							</a>
-						{{else if .Session}}
-							<p class="who">Účet je propojený.</p>
-						{{end}}
-					</div>
-				</li>
+			<div class="side"><div class="panel">
+				<ol class="steps">
+					<li class="step {{if .Session}}done{{else}}current{{end}}">
+						<span class="node" aria-hidden="true">{{if .Session}}<svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}1{{end}}</span>
+						<div class="head"><h2>Školní účet</h2><span class="chip">{{if .Session}}Hotovo{{else}}Na řadě{{end}}</span></div>
+						<div class="body">
+							{{if not .Session}}
+								<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz.</p>
+								<a href="{{.MSURL}}" class="btn btn-ms">
+									<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+										<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+										<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+										<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+										<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+									</svg>
+									Přihlásit se pomocí Microsoftu
+									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
+								</a>
+							{{else}}
+								<p class="who"><b>{{.Session.Name}}</b><br>{{.Session.Email}}</p>
+								<span class="role"><i></i>{{.Session.Role}}</span>
+							{{end}}
+						</div>
+					</li>
 
-				<li class="step {{if and .Session .Session.DiscordID}}current{{else}}todo{{end}}">
-					<span class="mark" aria-hidden="true">3</span>
-					<div>
-						<h2>Hotovo</h2>
-						{{if and .Session .Session.DiscordID}}
-							<p>Role ti byly přiděleny automaticky. Fakultní kanály se ti odemkly.</p>
-							<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn btn-done">Otevřít server na Discordu</a>
-						{{end}}
-					</div>
-				</li>
-			</ol>
+					<li class="step {{if not .Session}}todo{{else if .Session.DiscordID}}done{{else}}current{{end}}">
+						<span class="node" aria-hidden="true">{{if and .Session .Session.DiscordID}}<svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}<svg width="16" height="12" viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>{{end}}</span>
+						<div class="head"><h2>Discord</h2><span class="chip">{{if not .Session}}Čeká{{else if .Session.DiscordID}}Hotovo{{else}}Na řadě{{end}}</span></div>
+						<div class="body">
+							{{if and .Session (not .Session.DiscordID)}}
+								<p>Propojíme účet s tvým Discordem a přidáme tě na server.</p>
+								<a href="{{.DiscordURL}}" class="btn btn-discord">
+									<svg width="20" height="16" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+										<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
+									</svg>
+									Propojit s Discordem
+									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
+								</a>
+							{{else if .Session}}
+								<p class="who">Účet je propojený.</p>
+							{{else}}
+								<p>Přijde na řadu po přihlášení školním účtem.</p>
+							{{end}}
+						</div>
+					</li>
+
+					<li class="step {{if and .Session .Session.DiscordID}}current{{else}}todo{{end}}">
+						<span class="node" aria-hidden="true">3</span>
+						<div class="head"><h2>Server</h2><span class="chip">{{if and .Session .Session.DiscordID}}Na řadě{{else}}Čeká{{end}}</span></div>
+						<div class="body">
+							{{if and .Session .Session.DiscordID}}
+								<p>Role ti byly přiděleny automaticky a fakultní kanály se ti odemkly.</p>
+								<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn">
+									Otevřít server na Discordu
+									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
+								</a>
+							{{else}}
+								<p>Po propojení dostaneš role a přístup do fakultních kanálů.</p>
+							{{end}}
+						</div>
+					</li>
+				</ol>
+<div class="console" aria-live="polite">
+					{{if not .Session}}
+					<p class="ln" style="--d:0.3s">&gt; <b>čeká na přihlášení školním účtem</b><span class="cursor" aria-hidden="true"></span></p>
+					{{else if not .Session.DiscordID}}
+					<p class="ln" style="--d:0.4s">&gt; školní účet … <b>ověřen</b></p>
+					<p class="ln" style="--d:1.1s">&gt; discord … <b>čeká na propojení</b><span class="cursor" aria-hidden="true"></span></p>
+					{{else}}
+					<p class="ln" style="--d:0.4s">&gt; školní účet … <b>ověřen</b></p>
+					<p class="ln" style="--d:1.0s">&gt; discord … <b>propojen</b></p>
+					<p class="ln" style="--d:1.6s">&gt; role … <b>{{.Session.Role}}</b></p>
+					<p class="ln" style="--d:2.2s">&gt; <b>hotovo</b><span class="cursor" aria-hidden="true"></span></p>
+					{{end}}
+				</div>
+			</div>
+			<svg class="trace" viewBox="0 0 480 64" role="img" aria-label="Postup ověření: krok {{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}} ze 3">
+				<path class="base" d="M24 38H118L146 14H240"/>
+				<path class="base" d="M240 14H334L362 38H456"/>
+				<path class="lit {{if .Session}}on{{end}}" pathLength="100" d="M24 38H118L146 14H240"/>
+				<path class="lit {{if and .Session .Session.DiscordID}}on{{end}}" pathLength="100" d="M240 14H334L362 38H456"/>
+				<circle class="pad {{if .Session}}on{{else}}cur{{end}}" cx="24" cy="38" r="9"/>
+				<circle class="pad {{if not .Session}}{{else if .Session.DiscordID}}on{{else}}cur{{end}}" cx="240" cy="14" r="9"/>
+				<circle class="pad {{if and .Session .Session.DiscordID}}on{{end}}" cx="456" cy="38" r="9"/>
+				<text x="24" y="62" text-anchor="start" class="{{if .Session}}on{{end}}">Účet</text>
+				<text x="240" y="44" text-anchor="middle" class="{{if and .Session .Session.DiscordID}}on{{end}}">Discord</text>
+				<text x="456" y="62" text-anchor="end" class="{{if and .Session .Session.DiscordID}}on{{end}}">Server</text>
+			</svg>
+			</div>
 		</div>
 	</main>
 
 	<footer>
 		<div class="wrap">
-			<p>Ukládáme jméno, školní e-mail, roli (student nebo zaměstnanec) a ID tvého Discord účtu. Jeden školní účet jde propojit s jedním Discordem.</p>
-			<p>
-				{{if .EnableDevMock}}<a href="/mock-msal">Simulovat MS</a> &middot; <a href="/mock-discord">Simulovat Discord</a>{{end}}
-				{{if .Session}}{{if .EnableDevMock}} &middot; {{end}}<a href="/logout">Odhlásit se</a>{{end}}
-			</p>
+			<p class="legal"><span>Ukládáme jméno, školní e-mail, roli (student nebo zaměstnanec) a ID tvého Discord účtu.</span> <span>Jeden školní účet jde propojit s jedním Discordem.</span></p>
+			{{if .EnableDevMock}}<p><a href="/mock-msal">Simulovat MS</a> &middot; <a href="/mock-discord">Simulovat Discord</a></p>{{end}}
 		</div>
 	</footer>
 </body>

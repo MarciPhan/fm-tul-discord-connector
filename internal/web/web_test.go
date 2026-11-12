@@ -3,7 +3,9 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"sbibolet/internal/config"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +22,7 @@ func TestIsValidDiscordInvite(t *testing.T) {
 		{"https://discord.gg/fm-tul", true},
 		{"https://discord.com/invite/abc123xyz", true},
 		{"https://discord.gg/vase-pozvanka", false}, // placeholder
-		{"http://discord.gg/fm-tul", false},          // must be https
+		{"http://discord.gg/fm-tul", false},         // must be https
 		{"https://evil-site.com/?discord.gg", false},
 		{"javascript:alert(1)", false},
 		{"", false},
@@ -85,7 +87,7 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 	if rec.Code != 200 || len(cookies) == 0 {
 		t.Fatalf("index: code=%d cookies=%d", rec.Code, len(cookies))
 	}
-	first := rec.Body.String()
+	first := oauthLinks(rec.Body.String())
 
 	// /favicon.ico nesmi spustit HandleIndex
 	rec = httptest.NewRecorder()
@@ -101,7 +103,13 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 	req = httptest.NewRequest("GET", "/", nil)
 	req.AddCookie(cookies[0])
 	mux.ServeHTTP(rec, req)
-	if rec.Body.String() != first {
-		t.Fatal("druhe nacteni indexu zmenilo OAuth state")
+	if got := oauthLinks(rec.Body.String()); got != first || first == "" {
+		t.Fatalf("druhe nacteni indexu zmenilo OAuth state:\n%q\n%q", first, got)
 	}
+}
+
+// oauthLinks vrati odkazy na prihlaseni (obsahuji OAuth state), bez nahodne casti stranky
+func oauthLinks(html string) string {
+	re := regexp.MustCompile(`href="(https://login\.microsoftonline\.com[^"]*|https://discord\.com/oauth2[^"]*)"`)
+	return strings.Join(re.FindAllString(html, -1), "\n")
 }

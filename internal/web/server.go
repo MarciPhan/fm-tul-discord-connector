@@ -2,20 +2,27 @@ package web
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"sbibolet/internal/config"
 	"sbibolet/internal/security"
 )
 
+//go:embed static
+var staticFS embed.FS
+
 // Server je HTTP server instance
 var Server *http.Server
 
 // Setup registruje HTTP handlery a spusti server
 func Setup() {
+	go refreshChannels() // predstahnout kanaly pro terminal na uvodni strance
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", HandleIndex) // jen presne "/", jinak by catch-all (napr. /favicon.ico) prepisoval OAuth state
 	mux.HandleFunc("GET /msal", HandleMSAL)
@@ -23,6 +30,17 @@ func Setup() {
 	mux.HandleFunc("GET /mock-msal", HandleMockMSAL)
 	mux.HandleFunc("GET /mock-discord", HandleMockDiscord)
 	mux.HandleFunc("GET /logout", HandleLogout)
+
+	// Oficialni symbol FM TUL a fotky (vestavene v binarce)
+	staticRoot, _ := fs.Sub(staticFS, "static")
+	staticHandler := http.StripPrefix("/static/", http.FileServerFS(staticRoot))
+	mux.HandleFunc("GET /static/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		if strings.HasSuffix(r.URL.Path, ".woff2") {
+			w.Header().Set("Content-Type", "font/woff2")
+		}
+		staticHandler.ServeHTTP(w, r)
+	})
 
 	// Obaleni vsech handleru bezpecnostnim middlewarem
 	secureHandler := security.Middleware(mux)
