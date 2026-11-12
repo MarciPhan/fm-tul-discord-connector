@@ -27,28 +27,27 @@ func HandleGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	welcomeText := config.GetWelcomeMessage()
 
 	embed := &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("Vítej, %s!", userName),
+		Title: fmt.Sprintf("Vítej, %s", userName),
 		Description: fmt.Sprintf(
 			"%s\n\n"+
-				"**Jak získat přístup k fakultním kanálům?**\n"+
-				"Klikni na reakci v kanálu pro ověření, nebo použij příkaz `/overit`.\n\n"+
-				"Po ověření školním Microsoft účtem (`@tul.cz`) ti budou automaticky přiděleny role.",
+				"Pro přístup k fakultním kanálům se ověř školním účtem `@tul.cz`. "+
+				"Stačí kliknout na tlačítko pod zprávou nebo použít příkaz `/overit`. Role ti přidělíme automaticky.",
 			welcomeText,
 		),
-		Color: 0x10b981,
+		Color: embedColor,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: "FM TUL Discord Server • Automatická uvítací zpráva",
+			Text: "FM TUL Discord",
 		},
 	}
 
 	btn := discordgo.Button{
-		Label: "Ověřit identitu přes web",
+		Label: "Ověřit se školním účtem",
 		Style: discordgo.LinkButton,
 		URL:   config.Cfg.BaseURL,
 	}
 
 	_, err := s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
-		Content: fmt.Sprintf("Vítej na serveru, <@%s>!", m.User.ID),
+		Content: fmt.Sprintf("<@%s>", m.User.ID),
 		Embeds:  []*discordgo.MessageEmbed{embed},
 		Components: []discordgo.MessageComponent{
 			discordgo.ActionsRow{

@@ -23,18 +23,36 @@ func (c *CmdSetup) Info() *discordgo.ApplicationCommand {
 
 func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	embed := &discordgo.MessageEmbed{
-		Title: "Ověření studentů a zaměstnanců FM TUL",
-		Description: "Vítejte na Discord serveru Fakulty mechatroniky, informatiky a mezioborových studií TUL!\n\n" +
-			"Pro získání přístupu do neveřejných fakultních kanálů a místností **klikněte na reakci pod touto zprávou** (nebo na tlačítko níže).\n\n" +
-			"Bot vám obratem pošle privátní odkaz k ověření přes univerzitní Microsoft účet (`@tul.cz`).",
-		Color: 0x0284c7,
+		Title:       "Vítej na Discordu FM TUL",
+		Description: "Oficiální server Fakulty mechatroniky, informatiky a mezioborových studií TUL.",
+		Color:       embedColor,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name: "Jak začít",
+				Value: "1. Klikni na **Ověřit se školním účtem** pod touto zprávou a přihlas se účtem `@tul.cz`.\n" +
+					"2. Po ověření dostaneš role a odemknou se ti fakultní kanály.\n" +
+					"3. Svůj studijní program si zvol ve zprávě níže.\n" +
+					"Ověřit se jde i příkazem `/overit` nebo reakcí pod touto zprávou.",
+			},
+			{
+				Name: "Struktura serveru",
+				Value: "**FM | Oficiální informace**: novinky, akce, stáže, zahraničí, soutěže\n" +
+					"**FM | Komunita**: tipy na akce, nápady na vylepšení, ztráty a nálezy\n" +
+					"**Studentští poradci**: dotazy ke studiu\n" +
+					"**Studentské spolky**: Formule, SBC, ESN, TULab, RUN-EU",
+			},
+			{
+				Name:  "Pravidla",
+				Value: "Přečti si prosím kanál #pravidla. Ať se ti u nás líbí.",
+			},
+		},
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: "Ověření probíhá jednorázově skrze oficiální univerzitní Microsoft 365.",
+			Text: "Ověření je jednorázové a probíhá přes univerzitní Microsoft 365.",
 		},
 	}
 
 	btn := discordgo.Button{
-		Label: "Ověřit identitu přes web",
+		Label: "Ověřit se školním účtem",
 		Style: discordgo.LinkButton,
 		URL:   config.Cfg.BaseURL,
 	}

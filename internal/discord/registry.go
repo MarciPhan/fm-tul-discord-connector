@@ -68,3 +68,6 @@ func (reg *Registry) HasCommand(name string) bool {
 
 // Globalni registr prikazu
 var CmdRegistry = NewRegistry()
+
+// embedColor je oranzova FM TUL pouzita u vsech embedu bota
+const embedColor = 0xE8751A
