@@ -1,6 +1,9 @@
 package web
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"sbibolet/internal/config"
 	"sync"
 	"testing"
 	"time"
@@ -69,4 +72,36 @@ func TestConcurrentSessionAccess(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
+	config.Cfg.HMACSecret = "test-secret"
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", HandleIndex)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	cookies := rec.Result().Cookies()
+	if rec.Code != 200 || len(cookies) == 0 {
+		t.Fatalf("index: code=%d cookies=%d", rec.Code, len(cookies))
+	}
+	first := rec.Body.String()
+
+	// /favicon.ico nesmi spustit HandleIndex
+	rec = httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/favicon.ico", nil)
+	req.AddCookie(cookies[0])
+	mux.ServeHTTP(rec, req)
+	if rec.Code != 404 {
+		t.Fatalf("favicon: code=%d, ocekavano 404", rec.Code)
+	}
+
+	// opakovane nacteni indexu zachova stejny odkaz
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/", nil)
+	req.AddCookie(cookies[0])
+	mux.ServeHTTP(rec, req)
+	if rec.Body.String() != first {
+		t.Fatal("druhe nacteni indexu zmenilo OAuth state")
+	}
 }
