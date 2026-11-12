@@ -202,7 +202,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Volani Graph API /v1.0/me
-	req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://graph.microsoft.com/v1.0/me?$select=id,displayName,mail,userPrincipalName,jobTitle,department", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://graph.microsoft.com/v1.0/me?$select=id,displayName,mail,userPrincipalName,jobTitle,department,employeeType", nil)
 	req.Header.Set("Authorization", fmt.Sprintf("%s %s", tokenRes.TokenType, tokenRes.AccessToken))
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -226,6 +226,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		UserPrincipalName string `json:"userPrincipalName"`
 		JobTitle          string `json:"jobTitle"`
 		Department        string `json:"department"`
+		EmployeeType      string `json:"employeeType"`
 	}
 	if err := json.NewDecoder(gResp.Body).Decode(&profile); err != nil {
 		http.Error(w, "Chyba čtení profilu.", http.StatusInternalServerError)
@@ -244,7 +245,8 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role := security.DetermineRole(profile.JobTitle, email)
+	role := security.DetermineRole(profile.JobTitle, profile.EmployeeType, email)
+	log.Printf("MS profil %s: jobTitle=%q employeeType=%q department=%q -> %s", email, profile.JobTitle, profile.EmployeeType, profile.Department, role)
 
 	sess.SetStudent(&storage.Student{
 		MicrosoftID: profile.ID,
