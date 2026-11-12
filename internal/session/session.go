@@ -49,6 +49,13 @@ func (s *Session) SetMSALAuth(state, verifier string) {
 	s.MSALCodeVerifier = verifier
 }
 
+// PendingAuth vrati dosud nespotrebovane OAuth hodnoty (prazdne, pokud zadne nejsou)
+func (s *Session) PendingAuth() (msState, verifier, discordState string) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	return s.MSALState, s.MSALCodeVerifier, s.DiscordState
+}
+
 // SetDiscordState atomicky nastaví state pro Discord OAuth
 func (s *Session) SetDiscordState(state string) {
 	s.Mux.Lock()
