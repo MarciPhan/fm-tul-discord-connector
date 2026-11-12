@@ -80,14 +80,19 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		origin = "http://" + r.Host
 	}
 
-	// Vygenerujeme novy kryptograficky state a PKCE pro Microsoft krok
-	msState := security.GenerateStateToken()
-	verifier, challenge := security.GeneratePKCE()
-	sess.SetMSALAuth(msState, verifier)
-
-	// Vygenerujeme state pro Discord krok
-	discordState := security.GenerateStateToken()
-	sess.SetDiscordState(discordState)
+	// Nespotrebovane hodnoty znovu pouzijeme, aby refresh nebo druha zalozka
+	// nezneplatnila odkazy v uz otevrene strance
+	msState, verifier, discordState := sess.PendingAuth()
+	if msState == "" || verifier == "" {
+		msState = security.GenerateStateToken()
+		verifier, _ = security.GeneratePKCE()
+		sess.SetMSALAuth(msState, verifier)
+	}
+	challenge := security.PKCEChallenge(verifier)
+	if discordState == "" {
+		discordState = security.GenerateStateToken()
+		sess.SetDiscordState(discordState)
+	}
 
 	msURL := getMicrosoftLoginURL(origin, msState, challenge)
 	discordURL := getDiscordLoginURL(origin, discordState)
