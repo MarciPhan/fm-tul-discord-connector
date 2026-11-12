@@ -499,7 +499,13 @@ const indexTemplate = `<!DOCTYPE html>
 		body.s2 { --turn: 30deg; } body.s3 { --turn: 60deg; }
 
 		.bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-		.watermark { position: absolute; z-index: 0; right: -13rem; top: -11rem; width: min(54rem, 85vw); height: auto; opacity: 0.14; pointer-events: none; transform: rotate(var(--turn)); animation: click 1.4s var(--ease) 0.2s backwards; }
+		.circuit { position: absolute; top: 0; right: 0; width: min(44rem, 80vw); height: 40vh; opacity: 0.9; animation: fade 1.4s ease-out 0.1s backwards; -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 100%); mask-image: linear-gradient(to left, #000 35%, transparent 100%); }
+		.band { position: absolute; top: 0; bottom: 0; width: calc((100vw - 72rem) / 2 + 1rem); background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 300%22 fill=%22none%22 stroke=%22%23ea7603%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M0 30H45L65 50H80%22/%3E%3Cpath d=%22M0 110H30L50 130V175%22/%3E%3Cpath d=%22M0 235H60L75 220%22/%3E%3Cpath d=%22M0 285H35%22/%3E%3Cg fill=%22%23fbf9f6%22%3E%3Ccircle cx=%2280%22 cy=%2250%22 r=%224.5%22/%3E%3Ccircle cx=%2250%22 cy=%22175%22 r=%224.5%22/%3E%3Ccircle cx=%2275%22 cy=%22220%22 r=%224.5%22/%3E%3Ccircle cx=%2235%22 cy=%22285%22 r=%224.5%22/%3E%3C/g%3E%3C/svg%3E") repeat-y left top / 100% auto; opacity: 0.85; animation: fade 1.4s ease-out 0.15s backwards; -webkit-mask-image: linear-gradient(to right, #000 45%, transparent 100%); mask-image: linear-gradient(to right, #000 45%, transparent 100%); }
+		.band.l { left: 0; }
+		.band.r { right: 0; top: 42vh; transform: scaleX(-1); }
+		@media (max-width: 76rem) { .band { display: none; } }
+		.circuit path { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+		.circuit circle { fill: var(--bg); stroke: var(--orange); stroke-width: 2; }
 		.top, main, footer { position: relative; z-index: 1; }
 		.wrap { width: 100%; max-width: 72rem; margin: 0 auto; padding: 0 2rem; }
 
@@ -515,13 +521,13 @@ const indexTemplate = `<!DOCTYPE html>
 		.medal .rays { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(var(--turn)); animation: click 1.2s var(--ease) 0.4s backwards; }
 		.medal .photo { position: absolute; inset: 22%; width: 56%; height: 56%; border-radius: 50%; object-fit: cover; box-shadow: 0 10px 24px -12px rgba(26, 25, 22, 0.5); }
 		.chlist { margin-top: clamp(0.7rem, 2vh, 1.4rem); max-width: 25rem; }
-		.term { background: var(--ink); color: #efeae0; border-radius: 0.9rem; padding: 0.85rem 1.1rem 0.8rem; font: 400 0.86rem/1.75 var(--mono); letter-spacing: 0; box-shadow: 0 18px 36px -22px rgba(26, 25, 22, 0.7); overflow: hidden; }
+		.term { color: var(--ink); padding: 0; font: 400 0.9rem/1.8 var(--mono); letter-spacing: 0; overflow: hidden; }
 		.tl { display: flex; align-items: baseline; gap: 0.7ch; min-height: 1.75em; animation: show 0.01s linear var(--d, 0s) backwards; }
 		.term .pr { color: var(--orange); }
-		.term .hash { color: #8f897d; }
+		.term .hash { color: #9a9488; }
 		.tx { box-sizing: content-box; display: inline-block; overflow: hidden; white-space: nowrap; width: calc(var(--n) * 1ch); vertical-align: bottom; border-right: 0.55ch solid transparent; animation: type calc(var(--n) * 0.06s) steps(var(--n), end) var(--d) backwards, caret calc(var(--n) * 0.06s) steps(1, end) var(--d) backwards; }
-				.term .st { margin-left: auto; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8f897d; animation: show 0.3s ease-out var(--e) backwards; }
-		.chlist.open .term .st { color: var(--orange); }
+				.term .st { margin-left: auto; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a8579; animation: show 0.3s ease-out var(--e) backwards; }
+		.chlist.open .term .st { color: var(--orange-deep); }
 		.term .last { animation-delay: 0.3s; }
 		.term .cursor { margin-left: 0; background: var(--orange); }
 		.hint { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
@@ -637,6 +643,7 @@ const indexTemplate = `<!DOCTYPE html>
 		@keyframes caret { from, to { border-right-color: var(--orange); } }
 		@keyframes type { from { width: 0; } }
 		@keyframes show { from { opacity: 0; } }
+		@keyframes fade { from { opacity: 0; } }
 		@keyframes line { from { opacity: 0; transform: translateX(-8px); } }
 		@keyframes ripple { from { opacity: 0.9; transform: scale(0.6); } to { opacity: 0; transform: scale(2.4); } }
 		@keyframes lock-out { to { opacity: 0; transform: scale(0.6); } }
@@ -682,8 +689,8 @@ const indexTemplate = `<!DOCTYPE html>
 			.lead { font-size: 1rem; margin-top: 0.8rem; }
 			.chlist { margin-top: 0.9rem; }
 			.chlist .hint { display: none; }
-			.term { font-size: 0.72rem; padding: 0.6rem 0.8rem; }
-			.watermark { right: -17rem; top: -9rem; opacity: 0.11; }
+			.term { font-size: 0.74rem; }
+				.circuit { opacity: 0.55; height: 9vh; }
 			.wrap { padding: 0 1.1rem; }
 			main { padding: 0.4rem 0 1rem; }
 			.panel { padding: 0.5rem; border-radius: 1.4rem; }
@@ -708,7 +715,17 @@ const indexTemplate = `<!DOCTYPE html>
 </head>
 <body class="s{{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}}">
 
-	<div class="bg" aria-hidden="true"><img class="watermark" src="/static/tul-fm-symbol.svg" alt=""></div>
+	<div class="bg" aria-hidden="true">
+		<div class="band l"></div><div class="band r"></div>
+		<svg class="circuit" viewBox="0 0 520 300" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
+			<path d="M520 60H410L370 100H240"/>
+			<path d="M520 180H450L410 220H320"/>
+			<path d="M450 0V45L410 85H350"/>
+			<path d="M330 0V40L290 80V140"/>
+			<path d="M200 0V60"/>
+			<circle cx="240" cy="100" r="5"/><circle cx="320" cy="220" r="5"/><circle cx="350" cy="85" r="5"/><circle cx="290" cy="140" r="5"/><circle cx="200" cy="60" r="5"/>
+		</svg>
+	</div>
 
 	<header class="top">
 		<div class="wrap">
