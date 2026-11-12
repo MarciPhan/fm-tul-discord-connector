@@ -93,7 +93,7 @@ func Load() {
 		DiscordVerifiedID:      os.Getenv("DISCORD_VERIFIED_ID"),
 		DiscordFMStudentID:     discordFMStudentID,
 		DiscordFMStaffID:       discordFMStaffID,
-		DiscordInviteURL:       os.Getenv("DISCORD_INVITE_URL"),
+		DiscordInviteURL:       inviteURL(os.Getenv("DISCORD_INVITE_URL")),
 		DiscordVerifyEmoji:     os.Getenv("DISCORD_VERIFY_EMOJI"),
 		DiscordVerifyMessageID: os.Getenv("DISCORD_VERIFY_MESSAGE_ID"),
 		DiscordAuditChannelID:  os.Getenv("DISCORD_AUDIT_CHANNEL_ID"),
@@ -142,4 +142,15 @@ func getEnvFallback(primary, secondary string) string {
 		val = os.Getenv(secondary)
 	}
 	return val
+}
+
+// DefaultInviteURL je oficialni trvala pozvanka na Discord FM TUL (kanal #vitej-na-fm, bez expirace)
+const DefaultInviteURL = "https://discord.gg/RfWG6vYVj2"
+
+// inviteURL pouzije oficialni pozvanku, pokud neni v .env nastavena vlastni (nebo zustal vzor z .env.example)
+func inviteURL(v string) string {
+	if v == "" || v == "https://discord.gg/vase-pozvanka" {
+		return DefaultInviteURL
+	}
+	return v
 }
