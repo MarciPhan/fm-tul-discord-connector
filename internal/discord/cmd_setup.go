@@ -31,8 +31,7 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 				Name: "Jak začít",
 				Value: "1. Klikni na **Ověřit se školním účtem** pod touto zprávou a přihlas se účtem `@tul.cz`.\n" +
 					"2. Po ověření dostaneš role a odemknou se ti fakultní kanály.\n" +
-					"3. Svůj studijní program si zvol ve zprávě níže.\n" +
-					"Ověřit se jde i příkazem `/overit` nebo reakcí pod touto zprávou.",
+					"3. Svůj studijní program si zvol ve zprávě níže.",
 			},
 			{
 				Name: "Struktura serveru",
