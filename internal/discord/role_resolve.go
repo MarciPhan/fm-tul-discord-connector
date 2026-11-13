@@ -69,6 +69,11 @@ func ValidateRoleConfig() {
 			problems += fmt.Sprintf("- Role %s (`%s`) na serveru neexistuje, ověření ji nepřidělí.\n", c.label, c.name)
 		}
 	}
+	for _, name := range []string{"ME", "IT", "AVI", "Absolvent FM"} {
+		if resolveRoleID(roles, "", name) == "" {
+			problems += fmt.Sprintf("- Role `%s` na serveru neexistuje, výběr oboru nebo absolventa ji nepřidělí.\n", name)
+		}
+	}
 	if id := config.GetVerifiedRoleID(); id != "" && resolveRoleID(roles, id, roleNameVerified) == "" {
 		problems += fmt.Sprintf("- Role ověřeného (`%s`) na serveru neexistuje.\n", id)
 	}
@@ -78,5 +83,5 @@ func ValidateRoleConfig() {
 		audit.Log(audit.LevelDanger, "Špatná konfigurace rolí", problems+"Zkontroluj `DISCORD_FM_STUDENT_ID`, `DISCORD_FM_STAFF_ID` a `DISCORD_VERIFIED_ID` v `.env`.")
 		return
 	}
-	log.Println("Konfigurace rolí (Student FM, Zaměstnanec FM) je v pořádku.")
+	log.Println("Konfigurace rolí (Student FM, Zaměstnanec FM, obory, Absolvent FM) je v pořádku.")
 }

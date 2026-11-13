@@ -45,7 +45,14 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 		rolesToAdd = append(rolesToAdd, id)
 	}
 
-	if student.Role == "Zaměstnanec FM" {
+	if student.Role == "Absolvent FM" {
+		// Absolvent skolni ucet nema: dostane jen roli absolventa
+		if id := resolveRoleID(serverRoles, "", "Absolvent FM"); id != "" {
+			rolesToAdd = append(rolesToAdd, id)
+		} else {
+			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", "Absolvent FM", discordUserID)
+		}
+	} else if student.Role == "Zaměstnanec FM" {
 		if id := resolveRoleID(serverRoles, config.GetFMStaffRoleID(), roleNameStaff); id != "" {
 			rolesToAdd = append(rolesToAdd, id)
 		} else {
@@ -56,6 +63,23 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 			rolesToAdd = append(rolesToAdd, id)
 		} else {
 			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStudent, discordUserID)
+		}
+	}
+
+	// Studijni program z vyberu na webu (jen ME, IT, AVI; jine hodnoty se ignoruji)
+	programRoleIDs := map[string]string{}
+	for _, p := range []string{"ME", "IT", "AVI"} {
+		programRoleIDs[p] = resolveRoleID(serverRoles, "", p)
+	}
+	var programRolesToRemove []string
+	if student.Role == "Student FM" {
+		if id := programRoleIDs[student.Program]; id != "" {
+			rolesToAdd = append(rolesToAdd, id)
+			for p, other := range programRoleIDs {
+				if p != student.Program && other != "" {
+					programRolesToRemove = append(programRolesToRemove, other)
+				}
+			}
 		}
 	}
 
@@ -108,6 +132,16 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 			log.Printf("CHYBA: přidání role %s uživateli %s selhalo (status: %d): %s", roleID, discordUserID, rResp.StatusCode, errBody)
 		}
 		rResp.Body.Close()
+	}
+
+	// Zmena oboru: ostatni programove role se odeberou
+	for _, roleID := range programRolesToRemove {
+		delURL := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/members/%s/roles/%s", guildID, discordUserID, roleID)
+		dReq, _ := http.NewRequest("DELETE", delURL, nil)
+		dReq.Header.Set("Authorization", "Bot "+botToken)
+		if dResp, dErr := client.Do(dReq); dErr == nil {
+			dResp.Body.Close()
+		}
 	}
 
 	// Aktualizace prezdivky
