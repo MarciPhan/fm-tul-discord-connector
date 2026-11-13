@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -34,16 +35,28 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 	}
 	defer resp.Body.Close()
 
-	// Urceni roli
+	// Urceni roli (jen takovych, ktere na serveru opravdu existuji; jinak by Discord odmitl cely pozadavek)
+	serverRoles, rolesErr := guildRoles(guildID)
+	if rolesErr != nil {
+		return fmt.Errorf("nelze načíst role serveru: %w", rolesErr)
+	}
 	var rolesToAdd []string
-	if config.GetVerifiedRoleID() != "" {
-		rolesToAdd = append(rolesToAdd, config.GetVerifiedRoleID())
+	if id := resolveRoleID(serverRoles, config.GetVerifiedRoleID(), roleNameVerified); id != "" && config.GetVerifiedRoleID() != "" {
+		rolesToAdd = append(rolesToAdd, id)
 	}
 
-	if student.Role == "Zaměstnanec FM" && config.GetFMStaffRoleID() != "" {
-		rolesToAdd = append(rolesToAdd, config.GetFMStaffRoleID())
-	} else if config.GetFMStudentRoleID() != "" {
-		rolesToAdd = append(rolesToAdd, config.GetFMStudentRoleID())
+	if student.Role == "Zaměstnanec FM" {
+		if id := resolveRoleID(serverRoles, config.GetFMStaffRoleID(), roleNameStaff); id != "" {
+			rolesToAdd = append(rolesToAdd, id)
+		} else {
+			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStaff, discordUserID)
+		}
+	} else {
+		if id := resolveRoleID(serverRoles, config.GetFMStudentRoleID(), roleNameStudent); id != "" {
+			rolesToAdd = append(rolesToAdd, id)
+		} else {
+			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStudent, discordUserID)
+		}
 	}
 
 	// Bezpecna ocista jmena pro Discord
@@ -71,6 +84,11 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 			return putErr
 		}
 		defer putResp.Body.Close()
+		if putResp.StatusCode >= 300 {
+			errBody, _ := io.ReadAll(io.LimitReader(putResp.Body, 512))
+			log.Printf("CHYBA: přidání uživatele %s na server selhalo (status: %d): %s", discordUserID, putResp.StatusCode, errBody)
+			return fmt.Errorf("Discord odmítl přidání na server (status %d)", putResp.StatusCode)
+		}
 		log.Printf("Uživatel přidán na server (status: %d)", putResp.StatusCode)
 		return nil
 	}
@@ -81,9 +99,15 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 		rReq, _ := http.NewRequest("PUT", roleURL, nil)
 		rReq.Header.Set("Authorization", "Bot "+botToken)
 		rResp, rErr := client.Do(rReq)
-		if rErr == nil {
-			rResp.Body.Close()
+		if rErr != nil {
+			log.Printf("CHYBA: přidání role %s uživateli %s selhalo: %v", roleID, discordUserID, rErr)
+			continue
 		}
+		if rResp.StatusCode >= 300 {
+			errBody, _ := io.ReadAll(io.LimitReader(rResp.Body, 512))
+			log.Printf("CHYBA: přidání role %s uživateli %s selhalo (status: %d): %s", roleID, discordUserID, rResp.StatusCode, errBody)
+		}
+		rResp.Body.Close()
 	}
 
 	// Aktualizace prezdivky

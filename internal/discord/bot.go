@@ -36,6 +36,7 @@ func Setup() {
 	Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Discord Bot %s je online! Registrováno %d příkazů.", s.State.User.Username, CmdRegistry.CommandCount())
 		CmdRegistry.SyncWithGuild(s, config.Cfg.DiscordGuildID)
+		ValidateRoleConfig()
 	})
 
 	// Reakce na zpravy (overeni)
