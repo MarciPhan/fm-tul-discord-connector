@@ -41,6 +41,10 @@ func Setup() {
 	// Reakce na zpravy (overeni)
 	Session.AddHandler(HandleReactionAdd)
 
+	// Vyber studijniho programu reakcemi
+	Session.AddHandler(HandleProgramReactionAdd)
+	Session.AddHandler(HandleProgramReactionRemove)
+
 	// Zpracovani slash prikazu
 	Session.AddHandler(CmdRegistry.HandleInteraction)
 
