@@ -160,11 +160,28 @@ func terminalLines(names []string) (termLine, []termLine) {
 	t += 0.25
 	lines := make([]termLine, 0, len(names))
 	for _, n := range names {
-		l := termLine{Name: n, N: utf8.RuneCountInString(n) + 0, Delay: fmt.Sprintf("%.2fs", t)}
+		l := termLine{Name: n, N: cellWidth(n) + 1, Delay: fmt.Sprintf("%.2fs", t)}
 		t += 0.06 * float64(l.N)
 		l.End = fmt.Sprintf("%.2fs", t)
 		t += 0.15
 		lines = append(lines, l)
 	}
 	return cmd, lines
+}
+
+// cellWidth odhadne sirku textu v nasobcich sirky jednoho znaku neproporcionalniho pisma:
+// emoji a symboly jsou siroke 2, nulove spojovace 0, ostatni 1 (aby se nazvy v terminalu neorezavaly)
+func cellWidth(s string) int {
+	w := 0
+	for _, r := range s {
+		switch {
+		case r == 0xFE0F || r == 0x200D:
+			// variation selector a spojovac nemaji sirku
+		case r >= 0x1F000, r >= 0x2600 && r <= 0x27BF, r >= 0x2B00 && r <= 0x2BFF, r >= 0x2300 && r <= 0x23FF:
+			w += 2
+		default:
+			w++
+		}
+	}
+	return w
 }

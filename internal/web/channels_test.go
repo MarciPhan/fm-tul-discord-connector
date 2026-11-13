@@ -40,7 +40,24 @@ func TestRandomChannelsFallback(t *testing.T) {
 
 func TestTerminalLines(t *testing.T) {
 	cmd, lines := terminalLines([]string{"abc", "de"})
-	if cmd.N == 0 || len(lines) != 2 || lines[0].N != 3 {
+	if cmd.N == 0 || len(lines) != 2 || lines[0].N != 4 { // sirka + 1 znak rezerva
 		t.Fatalf("spatne casovani: %+v %+v", cmd, lines)
+	}
+}
+
+func TestCellWidth(t *testing.T) {
+	cases := map[string]int{
+		"tipy-na-akce":           12,
+		"📣-oznámení-discord":     18 + 1, // emoji = 2, zbytek 17
+		"🇪🇺-run-eu-studenti":     20,
+		"✅-přihlas-se-do-spolku": 24,
+	}
+	for in, want := range cases {
+		if got := cellWidth(in); got < want-1 {
+			t.Errorf("cellWidth(%q)=%d, očekáváno aspoň %d", in, got, want-1)
+		}
+	}
+	if cellWidth("a\uFE0Fb") != 2 {
+		t.Error("variation selector nemá mít šířku")
 	}
 }

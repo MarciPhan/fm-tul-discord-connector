@@ -588,6 +588,7 @@ const indexTemplate = `<!DOCTYPE html>
 	<meta name="theme-color" content="#ea7603">
 	<title>Ověření pro Discord FM TUL</title>
 	<script src="/static/fit.js" defer></script>
+	<script src="/static/busy.js" defer></script>
 	<link rel="preload" href="/static/fonts/TULMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/static/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
 	<style>
@@ -753,6 +754,21 @@ const indexTemplate = `<!DOCTYPE html>
 		.btn .arrow { transition: transform 0.3s var(--ease); }
 		.btn:hover { background: var(--orange); color: var(--ink); box-shadow: 0 14px 26px -12px rgba(236, 122, 28, 0.7); }
 		.btn:hover .arrow { transform: translateX(4px); }
+		.btn.busy { pointer-events: none; opacity: 0.85; }
+		.btn.busy .arrow { display: none; }
+		.btn.busy::after { content: ""; flex: none; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+		@keyframes spin { to { transform: rotate(360deg); } }
+		/* vyrazne tlacitka: oranzova s pulzem a sipkou, aby bylo jasne, ze se na ne ma kliknout */
+		.btn { font-size: 1.05rem; }
+		.btn-ms, .btn-discord { background: var(--orange); color: var(--ink); box-shadow: 0 10px 22px -10px rgba(234, 118, 3, 0.8); animation: pulse 2.2s ease-out infinite; }
+		.btn-ms:hover, .btn-discord:hover { background: var(--ink); color: #fff; animation: none; }
+		.btn-ms .arrow, .btn-discord .arrow { animation: nudge 1.4s ease-in-out infinite; }
+		.pick .btn { background: #fff; color: var(--ink); border: 2px solid var(--orange); box-shadow: none; justify-content: center; }
+		.pick .btn:hover { background: var(--orange); color: var(--ink); }
+		.btn.busy { animation: none; }
+		@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(234, 118, 3, 0.55); } 70% { box-shadow: 0 0 0 16px rgba(234, 118, 3, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 118, 3, 0); } }
+		@keyframes nudge { 50% { transform: translateX(6px); } }
+		@media (prefers-reduced-motion: reduce) { .btn-ms, .btn-discord, .btn .arrow { animation: none; } }
 		.btn-ms { background: #2f2f2f; color: #fff; }
 		.btn-ms:hover { background: #1f1f1f; color: #fff; box-shadow: 0 14px 26px -12px rgba(47, 47, 47, 0.7); }
 		.btn-discord { background: #5865f2; color: #fff; box-shadow: 0 10px 22px -10px rgba(88, 101, 242, 0.7); }
