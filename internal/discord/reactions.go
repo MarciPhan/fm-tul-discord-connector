@@ -87,7 +87,7 @@ func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 				"**%s**\n\n"+
 				"1. Přihlásíš se školním Microsoft účtem (`@tul.cz`)\n"+
 				"2. Propojíš svůj Discord účet a role ti budou okamžitě přiděleny na serveru.",
-			config.Cfg.BaseURL,
+			config.Cfg.StartURL(),
 		),
 		Color: 0x2563eb,
 	}
@@ -95,7 +95,7 @@ func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	btn := discordgo.Button{
 		Label: "Přejít na ověření",
 		Style: discordgo.LinkButton,
-		URL:   config.Cfg.BaseURL,
+		URL:   config.Cfg.StartURL(),
 	}
 
 	_, sendErr := s.ChannelMessageSendComplex(dmChannel.ID, &discordgo.MessageSend{
@@ -109,7 +109,7 @@ func HandleReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 
 	if sendErr != nil {
 		log.Printf("Nelze odeslat DM uživateli %s: %v", r.UserID, sendErr)
-		tmpMsg, _ := s.ChannelMessageSend(r.ChannelID, fmt.Sprintf("<@%s> Chtěl jsem ti poslat odkaz k ověření, ale máš zablokované soukromé zprávy (DM). Povol si prosím příjem DM od členů serveru, nebo přejdi přímo na: %s", r.UserID, config.Cfg.BaseURL))
+		tmpMsg, _ := s.ChannelMessageSend(r.ChannelID, fmt.Sprintf("<@%s> Chtěl jsem ti poslat odkaz k ověření, ale máš zablokované soukromé zprávy (DM). Povol si prosím příjem DM od členů serveru, nebo přejdi přímo na: %s", r.UserID, config.Cfg.StartURL()))
 		if tmpMsg != nil {
 			go func(cID, mID string) {
 				time.Sleep(15 * time.Second)

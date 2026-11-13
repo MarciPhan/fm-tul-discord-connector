@@ -25,14 +25,14 @@ func (c *CmdVerify) Handle(s *discordgo.Session, i *discordgo.InteractionCreate)
 		Description: fmt.Sprintf(
 			"Ahoj <@%s>,\n\nPro získání přístupu a rolí na Discordu FM TUL se prosím ověř přes náš webový konektor:\n\n**%s**\n\n1. Přihlásíš se školním Microsoft účtem (`@tul.cz`)\n2. Propojíš svůj Discord účet",
 			userID,
-			config.Cfg.BaseURL,
+			config.Cfg.StartURL(),
 		),
 		Color: 0x2563eb,
 	}
 	btn := discordgo.Button{
 		Label: "Přejít na ověření",
 		Style: discordgo.LinkButton,
-		URL:   config.Cfg.BaseURL,
+		URL:   config.Cfg.StartURL(),
 	}
 	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,

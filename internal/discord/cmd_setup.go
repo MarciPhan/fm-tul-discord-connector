@@ -31,7 +31,7 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 				Name: "Jak začít",
 				Value: "1. Klikni na **Ověřit se školním účtem** pod touto zprávou a přihlas se účtem `@tul.cz`.\n" +
 					"2. Po ověření dostaneš role a odemknou se ti fakultní kanály.\n" +
-					"3. Svůj studijní program si zvol ve zprávě níže.",
+					"3. Svůj studijní program a případně roli absolventa si zvol v kanálu **#🎯-vyber-oboru**.",
 			},
 			{
 				Name: "Struktura serveru",
@@ -53,7 +53,7 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 	btn := discordgo.Button{
 		Label: "Ověřit se školním účtem",
 		Style: discordgo.LinkButton,
-		URL:   config.Cfg.BaseURL,
+		URL:   config.Cfg.StartURL(),
 	}
 
 	sentMsg, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{

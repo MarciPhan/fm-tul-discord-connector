@@ -31,7 +31,7 @@ func HandleGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		Description: fmt.Sprintf(
 			"%s\n\n"+
 				"Pro přístup k fakultním kanálům se ověř školním účtem `@tul.cz`. "+
-				"Stačí kliknout na tlačítko pod zprávou nebo použít příkaz `/overit`. Role ti přidělíme automaticky.",
+				"Stačí kliknout na tlačítko pod zprávou. Role ti přidělíme automaticky.",
 			welcomeText,
 		),
 		Color: embedColor,
@@ -43,7 +43,7 @@ func HandleGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	btn := discordgo.Button{
 		Label: "Ověřit se školním účtem",
 		Style: discordgo.LinkButton,
-		URL:   config.Cfg.BaseURL,
+		URL:   config.Cfg.StartURL(),
 	}
 
 	_, err := s.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
