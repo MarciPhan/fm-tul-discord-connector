@@ -108,8 +108,8 @@ func HandleProgram(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
 }
 
-// HandleAlumni: absolvent uz skolni ucet nema, proto jde rovnou na Discord a dostane jen roli Absolvent FM.
-// Totoznost se neoveruje, role proto otevira jen kanaly pro absolventy.
+// HandleAlumni: absolvent uz skolni ucet nema, proto jde rovnou na Discord a dostane roli Absolvent FM.
+// Totoznost se neoveruje, Student FM (cely server) prideli az spravce schvalenim v audit kanalu.
 func HandleAlumni(w http.ResponseWriter, r *http.Request) {
 	sess := session.GetOrCreate(w, r)
 	origin := config.Cfg.BaseURL
@@ -507,6 +507,10 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 		audit.Log(audit.LevelDanger, "Ověření nedokončeno", fmt.Sprintf("Uživateli **%s** (%s) se nepodařilo přidat roli nebo členství na serveru: %v", student.Name, student.Email, err))
 		http.Error(w, "Školní účet je ověřený, ale na Discordu se nepodařilo přidělit role. Zkus to prosím za chvíli znovu, nebo napiš správcům.", http.StatusBadGateway)
 		return
+	}
+
+	if student.Role == "Absolvent FM" {
+		discord.RequestAlumniApproval(student.DiscordID, student.Name)
 	}
 
 	// 6. Bezpecne ulozeni
