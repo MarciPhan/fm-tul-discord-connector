@@ -73,6 +73,60 @@ func getDiscordLoginURL(origin string, state string) string {
 	return fmt.Sprintf("https://discord.com/oauth2/authorize?%s", values.Encode())
 }
 
+// programForRole: zamestnanec obor nevybira ("-"), student ho jeste musi vybrat ("")
+func programForRole(role string) string {
+	if role == "Zaměstnanec FM" {
+		return "-"
+	}
+	return ""
+}
+
+// HandleProgram ulozi vybrany obor a pokracuje na Discord
+func HandleProgram(w http.ResponseWriter, r *http.Request) {
+	sess := session.GetExisting(r)
+	if sess == nil || sess.GetStudent() == nil {
+		http.Redirect(w, r, "/go", http.StatusFound)
+		return
+	}
+	program := r.URL.Query().Get("p")
+	switch program {
+	case "ME", "IT", "AVI", "-":
+	default:
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	st := sess.GetStudent()
+	st.Program = program
+	sess.SetStudent(st)
+
+	origin := config.Cfg.BaseURL
+	if origin == "" {
+		origin = "http://" + r.Host
+	}
+	discordState := security.GenerateStateToken()
+	sess.SetDiscordState(discordState)
+	http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
+}
+
+// HandleAlumni: absolvent uz skolni ucet nema, proto jde rovnou na Discord a dostane jen roli Absolvent FM.
+// Totoznost se neoveruje, role proto otevira jen kanaly pro absolventy.
+func HandleAlumni(w http.ResponseWriter, r *http.Request) {
+	sess := session.GetOrCreate(w, r)
+	origin := config.Cfg.BaseURL
+	if origin == "" {
+		origin = "http://" + r.Host
+	}
+	sess.SetStudent(&storage.Student{
+		Faculty:    "FM",
+		Role:       "Absolvent FM",
+		Program:    "-",
+		VerifiedAt: time.Now(),
+	})
+	discordState := security.GenerateStateToken()
+	sess.SetDiscordState(discordState)
+	http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
+}
+
 // --- RYCHLY VSTUP (/go) ---
 
 // HandleStart je vstup z tlacitek na Discordu: bez uvodni stranky rovnou presmeruje
@@ -87,6 +141,10 @@ func HandleStart(w http.ResponseWriter, r *http.Request) {
 	if st := sess.GetStudent(); st != nil {
 		if st.DiscordID != "" {
 			http.Redirect(w, r, "/", http.StatusFound) // uz overen, stranka ukaze odkaz na server
+			return
+		}
+		if st.Program == "" {
+			http.Redirect(w, r, "/", http.StatusFound) // jeste nevybral obor
 			return
 		}
 		discordState := security.GenerateStateToken()
@@ -141,6 +199,7 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		"MSURL":         msURL,
 		"DiscordURL":    discordURL,
 		"InviteURL":     config.Cfg.DiscordInviteURL,
+		"NeedProgram":   sess.GetStudent() != nil && sess.GetStudent().DiscordID == "" && sess.GetStudent().Program == "",
 		"EnableDevMock": config.Cfg.EnableDevMock,
 	}
 	data["Cmd"], data["Channels"] = terminalLines(randomChannels(channelsShown))
@@ -297,9 +356,14 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		Faculty:     "FM",
 		Role:        role,
 		VerifiedAt:  time.Now(),
+		Program:     programForRole(role),
 	})
 
-	// Rovnou dal na Discord, bez mezistranky s dalsim tlacitkem
+	// Student nejdriv vybere obor (uvodni stranka), zamestnanec jde rovnou na Discord
+	if programForRole(role) == "" {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 	discordState := security.GenerateStateToken()
 	sess.SetDiscordState(discordState)
 	http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
@@ -406,6 +470,11 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 
 	student.DiscordID = discordUser.ID
+	if student.Role == "Absolvent FM" {
+		student.MicrosoftID = storage.AlumniPrefix + discordUser.ID
+		student.Email = discordUser.ID + "@absolvent.invalid"
+		student.Name = discordUser.Username
+	}
 
 	// 4. Kontrola striktni vazby 1:1 (Anti-Multi-Accounting)
 	if err := storage.CheckBindingAllowed(student); err != nil {
@@ -673,6 +742,14 @@ const indexTemplate = `<!DOCTYPE html>
 		.btn-ms:hover { background: #1f1f1f; color: #fff; box-shadow: 0 14px 26px -12px rgba(47, 47, 47, 0.7); }
 		.btn-discord { background: #5865f2; color: #fff; box-shadow: 0 10px 22px -10px rgba(88, 101, 242, 0.7); }
 		.btn-discord:hover { background: #4752c4; color: #fff; box-shadow: 0 14px 26px -12px rgba(88, 101, 242, 0.8); }
+		.pick { padding: clamp(0.8rem, 2vh, 1.4rem) 1.4rem; display: flex; flex-direction: column; align-items: stretch; }
+		.pick h2 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+		.pick p { margin-top: 0.4rem; color: #4a463f; font-size: 0.97rem; text-wrap: pretty; }
+		.pick .btn { width: 100%; justify-content: center; }
+		.alt { margin-top: 0.8rem !important; font-size: 0.9rem !important; }
+		.alt a { color: var(--ink); text-decoration: underline; }
+		.skip { margin-top: 0.7rem; align-self: center; background: none; border: 0; padding: 0.2rem; color: var(--muted); font: inherit; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
+		.skip:hover { color: var(--ink); }
 		.btn:active { transform: translateY(1px); box-shadow: 0 4px 10px -6px rgba(26, 25, 22, 0.5); }
 
 		.console { margin: 0.4rem 1.2rem 0.5rem; padding-top: 1rem; border-top: 1px solid var(--line); font: 400 0.8rem/1.6 var(--mono); color: var(--muted); }
@@ -789,10 +866,10 @@ const indexTemplate = `<!DOCTYPE html>
 			<div>
 				{{if not .Session}}
 				<h1>Ověř se <mark>školním účtem</mark></h1>
-				<p class="lead">Přihlas se účtem TUL, propoj ho s Discordem a na fakultním serveru dostaneš své role. Stačí to udělat jednou.</p>
+				<p class="lead">Přihlas se účtem TUL, vyber obor a rovnou tě provedeme na Discord a na fakultní server, kde dostaneš své role. Stačí to udělat jednou.</p>
 				{{else if not .Session.DiscordID}}
 				<h1>Školní účet <mark>ověřen</mark></h1>
-				<p class="lead">Jsi poznán jako {{.Session.Role}}. Zbývá propojit Discord a můžeš na server.</p>
+				<p class="lead">Jsi poznán jako {{.Session.Role}}. Zbývá vybrat obor a propojit Discord, pak se dostaneš na server.</p>
 				{{else}}
 				<h1>Ověření <mark>dokončeno</mark></h1>
 				<p class="lead">Role ti byly přiděleny. Fakultní kanály na Discordu se ti odemkly.</p>
@@ -803,7 +880,7 @@ const indexTemplate = `<!DOCTYPE html>
 						{{range .Channels}}<p class="tl ch" style="--n:{{.N}};--d:{{.Delay}};--e:{{.End}}"><span class="hash">#</span><span class="tx">{{.Name}}</span><span class="st">{{if and $.Session $.Session.DiscordID}}odemčeno{{else}}zamčeno{{end}}</span></p>
 						{{end}}<p class="tl last"><span class="pr">$</span><span class="cursor" aria-hidden="true"></span></p>
 					</div>
-					<p class="hint">Ověření najdeš na serveru i jako příkaz <span class="cmd">/overit</span></p>
+					<p class="hint">Ověření je jednorázové a po něm tě rovnou přesměrujeme na server</p>
 				</div>
 				<div class="medal" aria-hidden="true">
 					<img class="rays" src="/static/tul-fm-symbol.svg" alt="">
@@ -812,14 +889,24 @@ const indexTemplate = `<!DOCTYPE html>
 			</div>
 
 			<div class="side"><div class="panel">
+				{{if .NeedProgram}}
+				<form class="pick" action="/obor" method="get">
+					<h2>Jaký jsi obor?</h2>
+					<p>Vyber svůj studijní program, role ti přidělíme rovnou. Pak tě provedeme na Discord.</p>
+					<button class="btn" type="submit" name="p" value="ME">Mechatronika (ME)</button>
+					<button class="btn" type="submit" name="p" value="IT">Informační technologie (IT)</button>
+					<button class="btn" type="submit" name="p" value="AVI">Aplikované vědy v inženýrství (AVI)</button>
+					<button class="skip" type="submit" name="p" value="-">Obor teď nevybírám</button>
+				</form>
+				{{else}}
 				<ol class="steps">
 					<li class="step {{if .Session}}done{{else}}current{{end}}">
 						<span class="node" aria-hidden="true">{{if .Session}}<svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}1{{end}}</span>
 						<div class="head"><h2>Školní účet</h2><span class="chip">{{if .Session}}Hotovo{{else}}Na řadě{{end}}</span></div>
 						<div class="body">
 							{{if not .Session}}
-								<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz.</p>
-								<a href="{{.MSURL}}" class="btn btn-ms">
+								<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz. Dál tě provedeme sami.</p>
+								<a href="/go" class="btn btn-ms">
 									<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
 										<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
 										<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
@@ -829,6 +916,7 @@ const indexTemplate = `<!DOCTYPE html>
 									Přihlásit se pomocí Microsoftu
 									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
 								</a>
+									<p class="alt">Absolvent bez školního účtu? <a href="/absolvent">Pokračuj přes Discord</a></p>
 							{{else}}
 								<p class="who"><b>{{.Session.Name}}</b><br>{{.Session.Email}}</p>
 								<span class="role"><i></i>{{.Session.Role}}</span>
@@ -852,7 +940,7 @@ const indexTemplate = `<!DOCTYPE html>
 							{{else if .Session}}
 								<p class="who">Účet je propojený.</p>
 							{{else}}
-								<p>Přijde na řadu po přihlášení školním účtem.</p>
+								<p>Naváže se samo po výběru oboru.</p>
 							{{end}}
 						</div>
 					</li>
@@ -868,7 +956,7 @@ const indexTemplate = `<!DOCTYPE html>
 									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
 								</a>
 							{{else}}
-								<p>Po propojení dostaneš role a přístup do fakultních kanálů.</p>
+								<p>Po přihlášení tě přesměrujeme na server s přidělenými rolemi.</p>
 							{{end}}
 						</div>
 					</li>
@@ -886,6 +974,7 @@ const indexTemplate = `<!DOCTYPE html>
 					<p class="ln" style="--d:2.2s">&gt; <b>hotovo</b><span class="cursor" aria-hidden="true"></span></p>
 					{{end}}
 				</div>
+				{{end}}
 			</div>
 			<svg class="trace" viewBox="0 0 480 64" role="img" aria-label="Postup ověření: krok {{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}} ze 3">
 				<path class="base" d="M24 38H118L146 14H240"/>

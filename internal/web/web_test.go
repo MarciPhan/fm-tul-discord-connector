@@ -3,7 +3,6 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"sbibolet/internal/config"
 	"strings"
 	"sync"
@@ -80,6 +79,7 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 	config.Cfg.HMACSecret = "test-secret"
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", HandleIndex)
+	mux.HandleFunc("GET /go", HandleStart)
 
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
@@ -87,7 +87,9 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 	if rec.Code != 200 || len(cookies) == 0 {
 		t.Fatalf("index: code=%d cookies=%d", rec.Code, len(cookies))
 	}
-	first := oauthLinks(rec.Body.String())
+	if !strings.Contains(rec.Body.String(), `href="/go"`) {
+		t.Fatal("uvodni stranka ma vest na rychly vstup /go")
+	}
 
 	// /favicon.ico nesmi spustit HandleIndex
 	rec = httptest.NewRecorder()
@@ -98,18 +100,21 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 		t.Fatalf("favicon: code=%d, ocekavano 404", rec.Code)
 	}
 
-	// opakovane nacteni indexu zachova stejny odkaz
-	rec = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/", nil)
-	req.AddCookie(cookies[0])
-	mux.ServeHTTP(rec, req)
-	if got := oauthLinks(rec.Body.String()); got != first || first == "" {
-		t.Fatalf("druhe nacteni indexu zmenilo OAuth state:\n%q\n%q", first, got)
+	// opakovany vstup pres /go zachova stejny OAuth state (druha zalozka nezneplatni prvni)
+	var first string
+	for i := 0; i < 2; i++ {
+		rec = httptest.NewRecorder()
+		req = httptest.NewRequest("GET", "/go", nil)
+		req.AddCookie(cookies[0])
+		mux.ServeHTTP(rec, req)
+		loc := rec.Header().Get("Location")
+		if rec.Code != http.StatusFound || !strings.HasPrefix(loc, "https://login.microsoftonline.com/") {
+			t.Fatalf("/go: code=%d location=%q", rec.Code, loc)
+		}
+		if i == 0 {
+			first = loc
+		} else if loc != first {
+			t.Fatalf("druhy vstup pres /go zmenil OAuth state:\n%q\n%q", first, loc)
+		}
 	}
-}
-
-// oauthLinks vrati odkazy na prihlaseni (obsahuji OAuth state), bez nahodne casti stranky
-func oauthLinks(html string) string {
-	re := regexp.MustCompile(`href="(https://login\.microsoftonline\.com[^"]*|https://discord\.com/oauth2[^"]*)"`)
-	return strings.Join(re.FindAllString(html, -1), "\n")
 }
