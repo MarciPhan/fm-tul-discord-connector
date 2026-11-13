@@ -25,6 +25,7 @@ func Setup() {
 	go refreshChannels() // predstahnout kanaly pro terminal na uvodni strance
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", HandleIndex) // jen presne "/", jinak by catch-all (napr. /favicon.ico) prepisoval OAuth state
+	mux.HandleFunc("GET /go", HandleStart)
 	mux.HandleFunc("GET /msal", HandleMSAL)
 	mux.HandleFunc("GET /discord", HandleDiscord)
 	mux.HandleFunc("GET /mock-msal", HandleMockMSAL)

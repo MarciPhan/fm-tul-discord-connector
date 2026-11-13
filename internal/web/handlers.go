@@ -58,6 +58,8 @@ func getMicrosoftLoginURL(origin string, state, challenge string) string {
 	return fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?%s", tenant, values.Encode())
 }
 
+// getDiscordLoginURL: prompt=none znamena, ze kdo aplikaci uz jednou schvalil, souhlas nevidi;
+// prvni schvaleni Discord vyzaduje vzdy.
 func getDiscordLoginURL(origin string, state string) string {
 	redirectURI := fmt.Sprintf("%s/discord", origin)
 	values := url.Values{
@@ -65,10 +67,41 @@ func getDiscordLoginURL(origin string, state string) string {
 		"response_type": {"code"},
 		"scope":         {"identify guilds.join"},
 		"redirect_uri":  {redirectURI},
-		"prompt":        {"consent"},
+		"prompt":        {"none"},
 		"state":         {state},
 	}
 	return fmt.Sprintf("https://discord.com/oauth2/authorize?%s", values.Encode())
+}
+
+// --- RYCHLY VSTUP (/go) ---
+
+// HandleStart je vstup z tlacitek na Discordu: bez uvodni stranky rovnou presmeruje
+// na Microsoft (nebo, kdyz uz je clovek prihlaseny skolnim uctem, na Discord).
+func HandleStart(w http.ResponseWriter, r *http.Request) {
+	sess := session.GetOrCreate(w, r)
+	origin := config.Cfg.BaseURL
+	if origin == "" {
+		origin = "http://" + r.Host
+	}
+
+	if st := sess.GetStudent(); st != nil {
+		if st.DiscordID != "" {
+			http.Redirect(w, r, "/", http.StatusFound) // uz overen, stranka ukaze odkaz na server
+			return
+		}
+		discordState := security.GenerateStateToken()
+		sess.SetDiscordState(discordState)
+		http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
+		return
+	}
+
+	msState, verifier, _ := sess.PendingAuth()
+	if msState == "" || verifier == "" {
+		msState = security.GenerateStateToken()
+		verifier, _ = security.GeneratePKCE()
+		sess.SetMSALAuth(msState, verifier)
+	}
+	http.Redirect(w, r, getMicrosoftLoginURL(origin, msState, security.PKCEChallenge(verifier)), http.StatusFound)
 }
 
 // --- HLAVNI STRANKA ---
@@ -266,7 +299,10 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		VerifiedAt:  time.Now(),
 	})
 
-	http.Redirect(w, r, "/", http.StatusFound)
+	// Rovnou dal na Discord, bez mezistranky s dalsim tlacitkem
+	discordState := security.GenerateStateToken()
+	sess.SetDiscordState(discordState)
+	http.Redirect(w, r, getDiscordLoginURL(origin, discordState), http.StatusFound)
 }
 
 // --- DISCORD OAUTH2 CALLBACK ---
@@ -383,6 +419,9 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	err = discord.PerformJoinAndRole(discordUser.ID, tokenRes.AccessToken, student)
 	if err != nil {
 		log.Printf("Chyba při přiřazení rolí na Discordu: %v", err)
+		audit.Log(audit.LevelDanger, "Ověření nedokončeno", fmt.Sprintf("Uživateli **%s** (%s) se nepodařilo přidat roli nebo členství na serveru: %v", student.Name, student.Email, err))
+		http.Error(w, "Školní účet je ověřený, ale na Discordu se nepodařilo přidělit role. Zkus to prosím za chvíli znovu, nebo napiš správcům.", http.StatusBadGateway)
+		return
 	}
 
 	// 6. Bezpecne ulozeni
