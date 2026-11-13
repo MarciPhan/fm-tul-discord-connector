@@ -97,8 +97,14 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	msURL := getMicrosoftLoginURL(origin, msState, challenge)
 	discordURL := getDiscordLoginURL(origin, discordState)
 
+	serverURL := config.Cfg.DiscordInviteURL
+	if st := sess.GetStudent(); st != nil && st.DiscordID != "" {
+		serverURL = discord.ServerLink(st.DiscordID, serverURL)
+	}
+
 	data := map[string]interface{}{
 		"Session":       sess.GetStudent(),
+		"ServerURL":     serverURL,
 		"MSURL":         msURL,
 		"DiscordURL":    discordURL,
 		"InviteURL":     config.Cfg.DiscordInviteURL,
@@ -391,8 +397,10 @@ func HandleDiscord(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Úspěšně ověřen a spárován: %s (%s) <-> Discord ID: %s", student.Name, student.Email, student.DiscordID)
 	audit.Log(audit.LevelSuccess, "Uživatel ověřen", fmt.Sprintf("Identita **%s** (%s) spárována s účtem <@%s>.", student.Name, student.Email, student.DiscordID))
 
-	if isValidDiscordInvite(config.Cfg.DiscordInviteURL) {
-		http.Redirect(w, r, config.Cfg.DiscordInviteURL, http.StatusFound)
+	// Kdo na serveru je, jde rovnou na něj; kdo odešel, dostane pozvánku
+	link := discord.ServerLink(student.DiscordID, config.Cfg.DiscordInviteURL)
+	if link != "" && (link == config.Cfg.DiscordInviteURL && isValidDiscordInvite(link) || strings.HasPrefix(link, "https://discord.com/channels/")) {
+		http.Redirect(w, r, link, http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -816,7 +824,7 @@ const indexTemplate = `<!DOCTYPE html>
 						<div class="body">
 							{{if and .Session .Session.DiscordID}}
 								<p>Role ti byly přiděleny automaticky a fakultní kanály se ti odemkly.</p>
-								<a href="{{if .InviteURL}}{{.InviteURL}}{{else}}https://discord.com/app{{end}}" class="btn">
+								<a href="{{if .ServerURL}}{{.ServerURL}}{{else}}https://discord.com/app{{end}}" class="btn">
 									Otevřít server na Discordu
 									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
 								</a>
