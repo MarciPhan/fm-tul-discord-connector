@@ -70,12 +70,6 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		return
 	}
 
-	targetEmoji := config.Cfg.DiscordVerifyEmoji
-	if targetEmoji == "" {
-		targetEmoji = "🎓"
-	}
-	_ = s.MessageReactionAdd(i.ChannelID, sentMsg.ID, targetEmoji)
-	
 	respondEphemeral(s, i, "Ověřovací zpráva byla odeslána do tohoto kanálu.")
 	
 	username := GetInteractionUsername(i)
