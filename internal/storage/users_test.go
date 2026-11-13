@@ -114,3 +114,31 @@ func TestConcurrentSaveBinding(t *testing.T) {
 		t.Errorf("Očekáván právě 1 uživatel v databázi, ale nalezeno: %d", GetUserCount())
 	}
 }
+
+func TestAlumniBinding(t *testing.T) {
+	usersMux.Lock()
+	usersDB = make(map[string]*Student)
+	usersMux.Unlock()
+
+	alumni := &Student{MicrosoftID: AlumniPrefix + "111", Email: "111@absolvent.invalid", DiscordID: "111", Role: "Absolvent FM"}
+	if err := CheckBindingAllowed(alumni); err != nil {
+		t.Fatalf("absolvent bez zaznamu ma projit: %v", err)
+	}
+	usersMux.Lock()
+	usersDB["111"] = alumni
+	usersMux.Unlock()
+
+	// stejny Discord ucet se pozdeji muze overit jako student
+	student := &Student{MicrosoftID: "ms-1", Email: "jan.novak@tul.cz", DiscordID: "111", Role: "Student FM"}
+	if err := CheckBindingAllowed(student); err != nil {
+		t.Fatalf("student ma smet prebit absolventa: %v", err)
+	}
+
+	// ale absolvent nesmi prebit studenta na stejnem Discord uctu
+	usersMux.Lock()
+	usersDB["111"] = student
+	usersMux.Unlock()
+	if err := CheckBindingAllowed(alumni); err == nil {
+		t.Fatal("absolvent nesmi prebit overeneho studenta na stejnem Discord uctu")
+	}
+}

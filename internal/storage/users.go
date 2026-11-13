@@ -22,6 +22,15 @@ type Student struct {
 	Faculty     string    `json:"faculty"`
 	Role        string    `json:"role"` // "Student FM" nebo "Zaměstnanec FM"
 	VerifiedAt  time.Time `json:"verified_at"`
+	Program     string    `json:"program,omitempty"` // "ME", "IT", "AVI" nebo "-" (nevybráno / zaměstnanec / absolvent)
+}
+
+// AlumniPrefix je predpona syntetickeho Microsoft ID absolventu (ti uz skolni ucet nemaji)
+const AlumniPrefix = "alumni:"
+
+// IsAlumni rika, zda jde o absolventa overeneho jen pres Discord, bez skolniho uctu
+func IsAlumni(s *Student) bool {
+	return s != nil && strings.HasPrefix(s.MicrosoftID, AlumniPrefix)
 }
 
 // UsersStorageFile je cesta k souboru s databazi uzivatelu
@@ -35,6 +44,10 @@ var (
 // checkBindingAllowedLocked ověří pravidla vazby 1:1 uvnitř již zamčeného mutexu
 func checkBindingAllowedLocked(s *Student) error {
 	for _, u := range usersDB {
+		// Absolvent (bez skolniho uctu) nebrani tomu, aby se stejny Discord ucet pozdeji overil jako student
+		if IsAlumni(u) && !IsAlumni(s) {
+			continue
+		}
 		// Stejne Microsoft ID nebo email nesmi overit jiny Discord ucet
 		if (u.MicrosoftID == s.MicrosoftID || strings.EqualFold(u.Email, s.Email)) && u.DiscordID != s.DiscordID {
 			return fmt.Errorf("tento univerzitní TUL účet (%s) je již spárován s jiným Discord účtem", s.Email)
