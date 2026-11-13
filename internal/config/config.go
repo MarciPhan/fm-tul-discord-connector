@@ -154,3 +154,8 @@ func inviteURL(v string) string {
 	}
 	return v
 }
+
+// StartURL je adresa rychleho vstupu na overeni (tlacitka na Discordu vedou sem)
+func (c Config) StartURL() string {
+	return strings.TrimRight(c.BaseURL, "/") + "/go"
+}
