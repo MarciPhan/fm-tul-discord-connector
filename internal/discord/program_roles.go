@@ -13,23 +13,48 @@ import (
 // programMessageTitle je zacatek titulku zpravy s vyberem studijniho programu
 const programMessageTitle = "Vyber si svůj studijní program"
 
-// programRoles mapuje emoji na nazev role na serveru
-var programRoles = map[string]string{
-	"🔧": "ME",
-	"💻": "IT",
-	"🌐": "AVI",
-	"🎖": "Absolvent FM",
+// clubMessageTitle je zacatek titulku zpravy s prihlasenim do studentskych spolku
+const clubMessageTitle = "Přihlas se do studentských spolků"
+
+// reactionRoleSet popisuje jednu zpravu, jejiz reakce prideluji role
+type reactionRoleSet struct {
+	title     string            // text, ktery musi obsahovat titulek embedu zpravy
+	roles     map[string]string // emoji (bez variation selectoru) -> nazev role na serveru
+	exclusive []string          // emoji, ze kterych ma clovek jen jedno
 }
 
-// exclusiveProgramEmojis jsou programy, z nichz ma clovek jen jeden (absolvent je navic)
-var exclusiveProgramEmojis = []string{"🔧", "💻", "🌐"}
+var (
+	programSet = reactionRoleSet{
+		title: programMessageTitle,
+		roles: map[string]string{
+			"🔧": "ME",
+			"💻": "IT",
+			"🌐": "AVI",
+			"🎖": "Absolvent FM",
+		},
+		exclusive: []string{"🔧", "💻", "🌐"},
+	}
+
+	clubSet = reactionRoleSet{
+		title: clubMessageTitle,
+		roles: map[string]string{
+			"🏎":  "Formule",
+			"🤝":  "SBC",
+			"🌍":  "ESN",
+			"🔬":  "TULab",
+			"🇪🇺": "RUN-EU Studenti",
+		},
+	}
+
+	reactionRoleSets = []*reactionRoleSet{&programSet, &clubSet}
+)
 
 // verifiedRoleNames jsou nazvy rolí, podle kterych poznáme overeneho clena, kdyz neni nastavene ID
 var verifiedRoleNames = []string{"Student FM", "Zaměstnanec FM", "Ověřený"}
 
 var (
-	programMessageIDs    = make(map[string]bool)
-	programMessageIDsMux sync.Mutex
+	reactionMessageSets    = make(map[string]*reactionRoleSet)
+	reactionMessageSetsMux sync.Mutex
 )
 
 // normalizeEmoji odstrani variation selector, aby 🎖 a 🎖️ byly totez
@@ -37,36 +62,53 @@ func normalizeEmoji(name string) string {
 	return strings.ReplaceAll(name, "️", "")
 }
 
-// programRoleName vrati nazev role pro emoji, nebo "" pokud emoji neni programove
+// programRoleName vrati nazev role pro programove emoji, nebo "" pokud emoji neni programove
 func programRoleName(emoji string) string {
-	return programRoles[normalizeEmoji(emoji)]
+	return programSet.roles[normalizeEmoji(emoji)]
 }
 
-// isProgramMessage zjisti, zda je zprava vyber studijniho programu od tohoto bota
-func isProgramMessage(s *discordgo.Session, channelID, messageID string) bool {
-	programMessageIDsMux.Lock()
-	known := programMessageIDs[messageID]
-	programMessageIDsMux.Unlock()
-	if known {
-		return true
-	}
+// isExclusive rika, zda je emoji jednim z vzajemne se vylucujicich programu
+func isExclusive(emoji string) bool {
+	return programSet.isExclusive(emoji)
+}
 
-	msg, err := s.ChannelMessage(channelID, messageID)
-	if err != nil || msg == nil || msg.Author == nil || s.State == nil || s.State.User == nil {
-		return false
-	}
-	if msg.Author.ID != s.State.User.ID {
-		return false
-	}
-	for _, e := range msg.Embeds {
-		if strings.Contains(e.Title, programMessageTitle) {
-			programMessageIDsMux.Lock()
-			programMessageIDs[messageID] = true
-			programMessageIDsMux.Unlock()
+func (rs *reactionRoleSet) isExclusive(emoji string) bool {
+	e := normalizeEmoji(emoji)
+	for _, x := range rs.exclusive {
+		if x == e {
 			return true
 		}
 	}
 	return false
+}
+
+// findReactionSet zjisti, zda je zprava jednou ze zprav s reakcnimi rolemi od tohoto bota
+func findReactionSet(s *discordgo.Session, channelID, messageID string) *reactionRoleSet {
+	reactionMessageSetsMux.Lock()
+	known, ok := reactionMessageSets[messageID]
+	reactionMessageSetsMux.Unlock()
+	if ok {
+		return known
+	}
+
+	msg, err := s.ChannelMessage(channelID, messageID)
+	if err != nil || msg == nil || msg.Author == nil || s.State == nil || s.State.User == nil {
+		return nil
+	}
+	if msg.Author.ID != s.State.User.ID {
+		return nil
+	}
+	for _, e := range msg.Embeds {
+		for _, rs := range reactionRoleSets {
+			if strings.Contains(e.Title, rs.title) {
+				reactionMessageSetsMux.Lock()
+				reactionMessageSets[messageID] = rs
+				reactionMessageSetsMux.Unlock()
+				return rs
+			}
+		}
+	}
+	return nil
 }
 
 // guildRoleIDsByName vrati mapu nazev -> ID rolí serveru
@@ -104,19 +146,27 @@ func isVerifiedMember(member *discordgo.Member, byName map[string]string) bool {
 	return false
 }
 
-// HandleProgramReactionAdd prideli roli podle programove reakce (pouze overenym clenum)
+// HandleProgramReactionAdd prideli roli podle reakce (pouze overenym clenum)
 func HandleProgramReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	if r == nil || r.GuildID == "" || s.State == nil || s.State.User == nil || r.UserID == s.State.User.ID {
 		return
 	}
-	roleName := programRoleName(r.Emoji.Name)
-	if roleName == "" || !isProgramMessage(s, r.ChannelID, r.MessageID) {
+	emoji := normalizeEmoji(r.Emoji.Name)
+	if !isAnyReactionEmoji(emoji) {
+		return
+	}
+	set := findReactionSet(s, r.ChannelID, r.MessageID)
+	if set == nil {
+		return
+	}
+	roleName, ok := set.roles[emoji]
+	if !ok {
 		return
 	}
 
 	member, err := s.GuildMember(r.GuildID, r.UserID)
 	if err != nil {
-		log.Printf("Nelze načíst člena %s pro výběr programu: %v", r.UserID, err)
+		log.Printf("Nelze načíst člena %s pro reakční roli: %v", r.UserID, err)
 		return
 	}
 	byName := guildRoleIDsByName(s, r.GuildID)
@@ -131,17 +181,17 @@ func HandleProgramReactionAdd(s *discordgo.Session, r *discordgo.MessageReaction
 
 	roleID, ok := byName[roleName]
 	if !ok {
-		log.Printf("Role %q na serveru neexistuje, výběr programu přeskočen", roleName)
+		log.Printf("Role %q na serveru neexistuje, reakce přeskočena", roleName)
 		return
 	}
 
-	// programy se vylucuji: odebereme ostatni programove role i jejich reakce
-	if isExclusive(r.Emoji.Name) {
-		for _, other := range exclusiveProgramEmojis {
-			if other == normalizeEmoji(r.Emoji.Name) {
+	// vylucne emoji: odebereme ostatni role z teto skupiny i jejich reakce
+	if set.isExclusive(emoji) {
+		for _, other := range set.exclusive {
+			if other == emoji {
 				continue
 			}
-			if otherID, ok := byName[programRoles[other]]; ok {
+			if otherID, ok := byName[set.roles[other]]; ok {
 				_ = s.GuildMemberRoleRemove(r.GuildID, r.UserID, otherID)
 			}
 			_ = s.MessageReactionRemove(r.ChannelID, r.MessageID, other, r.UserID)
@@ -152,16 +202,24 @@ func HandleProgramReactionAdd(s *discordgo.Session, r *discordgo.MessageReaction
 		log.Printf("Nelze přidat roli %s uživateli %s: %v", roleName, r.UserID, err)
 		return
 	}
-	log.Printf("Výběr programu: uživatel %s dostal roli %s", r.UserID, roleName)
+	log.Printf("Reakční role: uživatel %s dostal roli %s", r.UserID, roleName)
 }
 
-// HandleProgramReactionRemove odebere roli, kdyz clovek sundá programovou reakci
+// HandleProgramReactionRemove odebere roli, kdyz clovek sundá reakci
 func HandleProgramReactionRemove(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
 	if r == nil || r.GuildID == "" || s.State == nil || s.State.User == nil || r.UserID == s.State.User.ID {
 		return
 	}
-	roleName := programRoleName(r.Emoji.Name)
-	if roleName == "" || !isProgramMessage(s, r.ChannelID, r.MessageID) {
+	emoji := normalizeEmoji(r.Emoji.Name)
+	if !isAnyReactionEmoji(emoji) {
+		return
+	}
+	set := findReactionSet(s, r.ChannelID, r.MessageID)
+	if set == nil {
+		return
+	}
+	roleName, ok := set.roles[emoji]
+	if !ok {
 		return
 	}
 	byName := guildRoleIDsByName(s, r.GuildID)
@@ -173,13 +231,13 @@ func HandleProgramReactionRemove(s *discordgo.Session, r *discordgo.MessageReact
 		log.Printf("Nelze odebrat roli %s uživateli %s: %v", roleName, r.UserID, err)
 		return
 	}
-	log.Printf("Výběr programu: uživateli %s odebrána role %s", r.UserID, roleName)
+	log.Printf("Reakční role: uživateli %s odebrána role %s", r.UserID, roleName)
 }
 
-func isExclusive(emoji string) bool {
-	e := normalizeEmoji(emoji)
-	for _, x := range exclusiveProgramEmojis {
-		if x == e {
+// isAnyReactionEmoji je rychly predfiltr, aby se zbytecne nevolalo API u cizich reakci
+func isAnyReactionEmoji(emoji string) bool {
+	for _, rs := range reactionRoleSets {
+		if _, ok := rs.roles[emoji]; ok {
 			return true
 		}
 	}

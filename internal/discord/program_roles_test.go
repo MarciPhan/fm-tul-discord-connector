@@ -22,6 +22,25 @@ func TestProgramRoleName(t *testing.T) {
 	}
 }
 
+func TestClubRoles(t *testing.T) {
+	cases := map[string]string{
+		"🏎":  "Formule",
+		"🏎️": "Formule",
+		"🤝":  "SBC",
+		"🌍":  "ESN",
+		"🔬":  "TULab",
+		"🇪🇺": "RUN-EU Studenti",
+	}
+	for emoji, want := range cases {
+		if got := clubSet.roles[normalizeEmoji(emoji)]; got != want {
+			t.Errorf("spolek pro %q = %q, očekáváno %q", emoji, got, want)
+		}
+	}
+	if len(clubSet.exclusive) != 0 {
+		t.Error("spolky se nemají vylučovat")
+	}
+}
+
 func TestIsExclusive(t *testing.T) {
 	for _, e := range []string{"🔧", "💻", "🌐"} {
 		if !isExclusive(e) {
