@@ -22,6 +22,7 @@ type Session struct {
 	MSALState        string
 	MSALCodeVerifier string
 	DiscordState     string
+	PendingProgram   string // obor z tlačítka na Discordu (ME, IT, AVI), jinak prázdné
 	CreatedAt        time.Time
 	ExpiresAt        time.Time
 	Mux              sync.RWMutex
@@ -54,6 +55,20 @@ func (s *Session) PendingAuth() (msState, verifier, discordState string) {
 	s.Mux.Lock()
 	defer s.Mux.Unlock()
 	return s.MSALState, s.MSALCodeVerifier, s.DiscordState
+}
+
+// SetPendingProgram uchova obor vybrany tlacitkem na Discordu do doby, nez se clovek prihlasi
+func (s *Session) SetPendingProgram(program string) {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	s.PendingProgram = program
+}
+
+// GetPendingProgram vrati obor z tlacitka na Discordu (prazdne, pokud tlacitko obor nenest)
+func (s *Session) GetPendingProgram() string {
+	s.Mux.RLock()
+	defer s.Mux.RUnlock()
+	return s.PendingProgram
 }
 
 // SetDiscordState atomicky nastaví state pro Discord OAuth
