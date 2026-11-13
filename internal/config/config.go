@@ -155,7 +155,12 @@ func inviteURL(v string) string {
 	return v
 }
 
+// PathURL vrati absolutni adresu cesty na webu overeni
+func (c Config) PathURL(path string) string {
+	return strings.TrimRight(c.BaseURL, "/") + path
+}
+
 // StartURL je adresa rychleho vstupu na overeni (tlacitka na Discordu vedou sem)
 func (c Config) StartURL() string {
-	return strings.TrimRight(c.BaseURL, "/") + "/go"
+	return c.PathURL("/go")
 }
