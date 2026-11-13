@@ -587,7 +587,6 @@ const indexTemplate = `<!DOCTYPE html>
 	<meta name="color-scheme" content="light">
 	<meta name="theme-color" content="#ea7603">
 	<title>Ověření pro Discord FM TUL</title>
-	<script src="/static/fit.js" defer></script>
 	<link rel="preload" href="/static/fonts/TULMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
 	<link rel="preload" href="/static/fonts/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin>
 	<style>
@@ -596,282 +595,80 @@ const indexTemplate = `<!DOCTYPE html>
 		@font-face { font-family: 'Inter'; src: url('/static/fonts/Inter-Regular.woff2') format('woff2'); font-weight: 400 500; font-style: normal; font-display: swap; }
 		@font-face { font-family: 'Inter'; src: url('/static/fonts/Inter-Bold.woff2') format('woff2'); font-weight: 600 800; font-style: normal; font-display: swap; }
 		:root {
-			--bg: #fbf9f6;
-			--surface: #ffffff;
-			--ink: #1a1916;
-			--muted: #67625a;
-			--line: #e7e2d9;
 			--orange: #ea7603;
-			--orange-soft: #fdebd9;
-			--orange-deep: #8f3f04;
-			--ease: cubic-bezier(0.16, 1, 0.3, 1);
-			--sans: 'Inter', system-ui, sans-serif;
+			--plum: #7e1a47;
+			--text: #595758;
+			--ink: #424242;
+			--line: #e9e9e9;
+			--soft: #f1f1f1;
+			--white: #ffffff;
+			--sans: 'Inter', 'Open Sans', system-ui, sans-serif;
 			--mono: 'TUL Mono', ui-monospace, monospace;
 		}
 		* { margin: 0; padding: 0; box-sizing: border-box; }
-		html { font-size: 16px; -webkit-text-size-adjust: 100%; scrollbar-width: none; }
-		::-webkit-scrollbar { display: none; }
-		::selection { background: var(--orange); color: var(--ink); }
-		:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
-		a { color: inherit; text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+		html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+		::selection { background: var(--orange); color: var(--white); }
+		:focus-visible { outline: 3px solid var(--plum); outline-offset: 3px; border-radius: 4px; }
+		a { color: var(--plum); text-underline-offset: 0.2em; }
+		a:hover { color: var(--orange); }
 
-		body {
-			background: var(--bg);
-			color: var(--ink);
-			font-family: var(--sans);
-			font-size: 1.03rem;
-			line-height: 1.55;
-			min-height: 100vh;
-			min-height: 100dvh;
-			display: flex; flex-direction: column;
-			position: relative; overflow-x: hidden;
-			caret-color: var(--orange);
-		}
-		body { --turn: 0deg; }
-		body.s2 { --turn: 30deg; } body.s3 { --turn: 60deg; }
+		body { background: var(--soft); color: var(--text); font-family: var(--sans); font-size: 1rem; line-height: 1.6; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+		.wrap { width: 100%; max-width: 64rem; margin: 0 auto; padding: 0 1.5rem; }
 
-		.bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-		.circuit { position: absolute; top: 0; right: 0; width: min(44rem, 80vw); height: 40vh; opacity: 0.9; animation: fade 1.4s ease-out 0.1s backwards; -webkit-mask-image: linear-gradient(to left, #000 35%, transparent 100%); mask-image: linear-gradient(to left, #000 35%, transparent 100%); }
-		.band { position: absolute; top: 0; bottom: 0; width: calc((100vw - 72rem) / 2 + 1rem); background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 300%22 fill=%22none%22 stroke=%22%23ea7603%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M0 30H45L65 50H80%22/%3E%3Cpath d=%22M0 110H30L50 130V175%22/%3E%3Cpath d=%22M0 235H60L75 220%22/%3E%3Cpath d=%22M0 285H35%22/%3E%3Cg fill=%22%23fbf9f6%22%3E%3Ccircle cx=%2280%22 cy=%2250%22 r=%224.5%22/%3E%3Ccircle cx=%2250%22 cy=%22175%22 r=%224.5%22/%3E%3Ccircle cx=%2275%22 cy=%22220%22 r=%224.5%22/%3E%3Ccircle cx=%2235%22 cy=%22285%22 r=%224.5%22/%3E%3C/g%3E%3C/svg%3E") repeat-y left top / 100% auto; opacity: 0.85; animation: fade 1.4s ease-out 0.15s backwards; -webkit-mask-image: linear-gradient(to right, #000 45%, transparent 100%); mask-image: linear-gradient(to right, #000 45%, transparent 100%); }
-		.band.l { left: 0; }
-		.band.r { right: 0; top: 42vh; transform: scaleX(-1); }
-		@media (max-width: 76rem) { .band { display: none; } }
-		.circuit path { fill: none; stroke: var(--orange); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-		.circuit circle { fill: var(--bg); stroke: var(--orange); stroke-width: 2; }
-		.top, main, footer { position: relative; z-index: 1; }
-		.wrap { width: 100%; max-width: 72rem; margin: 0 auto; padding: 0 2rem; }
+		header { background: var(--white); border-bottom: 1px solid var(--line); }
+		header .wrap { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: 1.1rem; padding-bottom: 1.1rem; }
+		.logo { display: block; text-decoration: none; }
+		.logo svg { display: block; width: 15.5rem; max-width: 62vw; height: auto; overflow: visible; }
+		.logo text { font-family: var(--mono); font-weight: 700; font-size: 20px; fill: var(--orange); }
+		.out { font-size: 0.9rem; color: var(--text); }
+		.out:hover { color: var(--plum); }
 
-		.top { padding: clamp(0.75rem, 2.4vh, 1.6rem) 0; }
-		.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-		.brand { display: block; text-decoration: none; font: 500 0.78rem/1.35 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--orange-deep); }
-		.brand span { display: block; }
-		.brand u { text-decoration-thickness: 2px; text-underline-offset: 0.18em; }
-		.brand { display: flex; align-items: center; gap: 0.85rem; }
-		.brand img { width: 2.9rem; height: 2.9rem; flex: none; display: block; }
-		.brand-words { display: block; }
-		.medal { position: relative; width: clamp(8rem, 24vh, 13rem); aspect-ratio: 1; margin-top: clamp(1rem, 3vh, 2.2rem); animation: rise 0.9s var(--ease) 0.3s backwards; }
-		.medal .rays { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(var(--turn)); animation: click 1.2s var(--ease) 0.4s backwards; }
-		.medal .photo { position: absolute; inset: 22%; width: 56%; height: 56%; border-radius: 50%; object-fit: cover; box-shadow: 0 10px 24px -12px rgba(26, 25, 22, 0.5); }
-		.chlist { margin-top: clamp(0.7rem, 2vh, 1.4rem); max-width: 25rem; }
-		.term { color: var(--ink); padding: 0; font: 400 0.9rem/1.8 var(--mono); letter-spacing: 0; overflow: hidden; }
-		.tl { display: flex; align-items: baseline; gap: 0.7ch; min-height: 1.75em; animation: show 0.01s linear var(--d, 0s) backwards; }
-		.term .pr { color: var(--orange); }
-		.term .hash { color: #9a9488; }
-		.tx { box-sizing: content-box; display: inline-block; overflow: hidden; white-space: nowrap; width: calc(var(--n) * 1ch); vertical-align: bottom; border-right: 0.55ch solid transparent; animation: type calc(var(--n) * 0.06s) steps(var(--n), end) var(--d) backwards, caret calc(var(--n) * 0.06s) steps(1, end) var(--d) backwards; }
-				.term .st { margin-left: auto; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #8a8579; animation: show 0.3s ease-out var(--e) backwards; }
-		.chlist.open .term .st { color: var(--orange-deep); }
-		.term .last { animation-delay: 0.3s; }
-		.term .cursor { margin-left: 0; background: var(--orange); }
-		.hint { margin-top: 0.9rem; font-size: 0.82rem; color: var(--muted); }
-		.cmd { font: 500 0.78rem/1 var(--mono); padding: 0.2rem 0.45rem; border-radius: 0.35rem; background: #e9ebfd; color: #3b45ab; }
-		.role { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.55rem; padding: 0.22rem 0.6rem 0.22rem 0.5rem; border: 1px solid var(--line); border-radius: 0.4rem; font-size: 0.82rem; font-weight: 500; color: var(--ink); background: #faf8f4; }
-		.role i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--orange); flex: none; }
-		.lk { position: relative; width: 14px; height: 14px; flex: none; color: #8e8a82; }
-		.chlist.open .lk { color: var(--orange-deep); }
-		.lk svg { position: absolute; inset: 0; }
-		.lk-o { opacity: 0; }
-		.chlist.open .lk-c { animation: lock-out 0.3s var(--ease) calc(1.1s + var(--i) * 0.16s) forwards; }
-		.chlist.open .lk-o { opacity: 1; animation: lock-in 0.4s var(--ease) calc(1.2s + var(--i) * 0.16s) backwards; }
-		body.s3 .medal::after { content: ""; position: absolute; inset: 22%; border: 2px solid var(--orange); border-radius: 50%; pointer-events: none; animation: ripple 1.8s ease-out 0.9s backwards; }
-		/* spoje pod formulářem: postup jako signál */
-		.side { display: flex; flex-direction: column; min-width: 0; }
-		.trace { display: block; width: 100%; max-width: 30rem; margin: clamp(0.5rem, 1.6vh, 1.2rem) auto 0; overflow: visible; animation: rise 0.9s var(--ease) 0.3s backwards; }
-		.trace path { fill: none; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
-		.trace .base { stroke: #d8d1c4; }
-		.trace .lit { stroke: var(--orange); display: none; }
-		.trace .lit.on { display: block; stroke-dasharray: 100 100; animation: wire 1.2s var(--ease) 0.5s backwards; }
-		.trace .pad { fill: var(--bg); stroke: #d8d1c4; stroke-width: 3.5; }
-		.trace .pad.cur { stroke: var(--orange); }
-		.trace .pad.on { fill: var(--orange); stroke: var(--orange); }
-		.trace text { font: 500 10.5px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--muted); }
-		.trace text.on { fill: var(--ink); }
-		.out { font-size: 0.9rem; color: var(--muted); white-space: nowrap; }
-		.out:hover { color: var(--ink); }
+		main { flex: 1; }
+		main .wrap { padding-top: clamp(1.8rem, 6vh, 3.5rem); padding-bottom: 2rem; display: grid; gap: 2rem 3.5rem; align-items: start; grid-template-columns: 1fr; }
+		@media (min-width: 52rem) { main .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); } }
 
-		main { flex: 1; display: flex; align-items: center; padding: clamp(0.5rem, 2.5vh, 2.5rem) 0 clamp(1rem, 4vh, 3.5rem); }
-		main .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 4rem; align-items: center; }
+		h1 { font-family: var(--mono); font-weight: 700; font-size: clamp(1.9rem, 5vw, 2.9rem); line-height: 1.12; letter-spacing: -0.01em; color: var(--orange); text-wrap: balance; }
+		.lead { margin-top: 1rem; max-width: 30rem; font-size: 1.08rem; color: var(--text); text-wrap: pretty; }
+		.points { margin-top: 1.5rem; list-style: none; display: grid; gap: 0.7rem; max-width: 30rem; }
+		.points li { position: relative; padding-left: 1.5rem; }
+		.points li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 0.6rem; height: 0.6rem; background: var(--orange); border-radius: 1px; }
 
-		h1 {
-			font-family: var(--mono); font-size: clamp(1.9rem, min(4.2vw, 7.5vh), 4rem); line-height: 1.08; font-weight: 700; letter-spacing: -0.035em;
-			text-wrap: balance; animation: rise 0.9s var(--ease) 0.05s backwards;
-		}
-		h1 mark {
-			color: inherit; background: none;
-			background-image: linear-gradient(transparent 66%, rgba(236, 122, 28, 0.38) 66% 92%, transparent 92%);
-			padding: 0 0.04em; margin: 0 -0.04em;
-		}
-		.lead { margin-top: clamp(0.7rem, 2vh, 1.5rem); max-width: 29rem; font-size: 1.12rem; color: var(--muted); text-wrap: pretty; animation: rise 0.9s var(--ease) 0.15s backwards; }
-		.facts { margin-top: clamp(0.8rem, 2.4vh, 2.2rem); display: flex; flex-wrap: wrap; gap: 0.6rem; animation: rise 0.9s var(--ease) 0.25s backwards; }
-		.facts li { list-style: none; font-size: 0.84rem; padding: 0.4rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: rgba(255, 255, 255, 0.7); color: var(--muted); }
+		.card { background: var(--white); border: 1px solid var(--line); border-radius: 0.5rem; padding: 1.6rem; }
+		.progress { list-style: none; display: flex; gap: 0.4rem; margin-bottom: 1.4rem; font: 500 0.78rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.03em; }
+		.progress li { flex: 1; padding-top: 0.55rem; border-top: 4px solid var(--line); color: #999999; }
+		.progress li.done { border-color: var(--orange); color: var(--text); }
+		.progress li.current { border-color: var(--plum); color: var(--plum); }
+		.card h2 { font-family: var(--mono); font-weight: 700; font-size: 1.35rem; line-height: 1.2; color: var(--ink); }
+		.card p { margin-top: 0.6rem; }
+		.who { margin-top: 0.9rem; padding: 0.8rem 1rem; background: var(--soft); border-radius: 0.4rem; }
+		.who b { color: var(--ink); }
+		.chip { display: inline-block; margin-top: 0.4rem; padding: 0.15rem 0.6rem; border: 1px solid var(--orange); border-radius: 0.3rem; font-size: 0.85rem; font-weight: 500; color: var(--plum); background: var(--white); }
 
-		/* panel s kroky */
-		.panel {
-			background: var(--surface); border: 1px solid var(--line); border-radius: 1.75rem;
-			box-shadow: 0 1px 2px rgba(26, 25, 22, 0.04), 0 30px 60px -28px rgba(60, 40, 10, 0.28);
-			padding: 1.1rem; animation: rise 0.9s var(--ease) 0.2s backwards;
-		}
-		ol.steps { list-style: none; }
-		.step { --sy: clamp(0.65rem, 1.8vh, 1.15rem); position: relative; display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 0 1.1rem; padding: var(--sy) 1.2rem calc(var(--sy) + 0.1rem); border-radius: 1.2rem; transition: background-color 0.3s var(--ease); }
-		.step.current { background: #fdf4ea; }
-		.node {
-			width: 2.4rem; height: 2.4rem; border-radius: 50%; display: grid; place-items: center;
-			border: 2px solid var(--line); background: var(--surface); color: var(--muted);
-			font: 500 0.85rem/1 var(--mono); position: relative; z-index: 1;
-		}
-		.step.current .node { border-color: var(--orange); color: var(--ink); background: var(--surface); }
-		.step.done .node { border-color: var(--orange); background: var(--orange); color: var(--ink); }
-		/* spojnice mezi uzly */
-		.step:not(:last-child)::before {
-			content: ""; position: absolute; left: calc(1.2rem + 1.2rem - 1px); top: calc(var(--sy) + 2.4rem); bottom: calc(var(--sy) * -1); width: 2px; background: var(--line); z-index: 0;
-		}
-		.step.done:not(:last-child)::before { background: var(--orange); animation: grow 0.7s var(--ease) 0.5s backwards; transform-origin: top; }
-
-		.head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 2.4rem; }
-		.step h2 { font-size: 1.22rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
-		.step.todo h2 { color: var(--muted); font-weight: 500; }
-		.chip { font: 500 0.7rem/1 var(--mono); letter-spacing: 0.04em; text-transform: uppercase; padding: 0.4rem 0.6rem; border-radius: 999px; white-space: nowrap; }
-		.step.current .chip { background: var(--orange-soft); color: var(--orange-deep); }
-		.step.done .chip { background: #eef6ec; color: #2c5b24; }
-		.step.todo .chip { color: var(--muted); border: 1px solid var(--line); }
-		.step p { color: var(--muted); font-size: 0.97rem; max-width: 24rem; text-wrap: pretty; }
-		.step.current p { color: #4a463f; }
-		.body { grid-column: 2; margin-top: -0.2rem; }
-		.step:not(.current) .body p:not(.who) { display: none; }
-		.step:not(.current) .body { margin-top: 0; }
-		.step:not(.current) .who { font-size: 0.9rem; }
-		.who { color: var(--ink) !important; }
-		.who b { font-weight: 600; }
-
-		.btn {
-			display: inline-flex; align-items: center; gap: 0.75rem;
-			margin-top: clamp(0.8rem, 1.8vh, 1.15rem); padding: 0.9rem 1.25rem 0.9rem 1.3rem;
-			border-radius: 0.95rem; border: 0; background: var(--ink); color: #fff;
-			font: 600 1rem/1.15 var(--sans); letter-spacing: -0.005em; text-decoration: none; cursor: pointer;
-			box-shadow: 0 10px 22px -10px rgba(26, 25, 22, 0.55);
-			transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
-		}
+		.btn { display: flex; align-items: center; justify-content: center; gap: 0.7rem; width: 100%; margin-top: 1.2rem; padding: 0.95rem 1.2rem; border: 2px solid var(--plum); border-radius: 0.4rem; background: var(--plum); color: var(--white); font: 600 1rem/1.2 var(--sans); text-align: center; text-decoration: none; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+		.btn:hover { background: var(--white); color: var(--plum); }
 		.btn svg { flex: none; }
-		.btn .arrow { transition: transform 0.3s var(--ease); }
-		.btn:hover { background: var(--orange); color: var(--ink); box-shadow: 0 14px 26px -12px rgba(236, 122, 28, 0.7); }
-		.btn:hover .arrow { transform: translateX(4px); }
-		.btn-ms { background: #2f2f2f; color: #fff; }
-		.btn-ms:hover { background: #1f1f1f; color: #fff; box-shadow: 0 14px 26px -12px rgba(47, 47, 47, 0.7); }
-		.btn-discord { background: #5865f2; color: #fff; box-shadow: 0 10px 22px -10px rgba(88, 101, 242, 0.7); }
-		.btn-discord:hover { background: #4752c4; color: #fff; box-shadow: 0 14px 26px -12px rgba(88, 101, 242, 0.8); }
-		.pick { padding: clamp(0.8rem, 2vh, 1.4rem) 1.4rem; display: flex; flex-direction: column; align-items: stretch; }
-		.pick h2 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
-		.pick p { margin-top: 0.4rem; color: #4a463f; font-size: 0.97rem; text-wrap: pretty; }
-		.pick .btn { width: 100%; justify-content: center; }
-		.alt { margin-top: 0.8rem !important; font-size: 0.9rem !important; }
-		.alt a { color: var(--ink); text-decoration: underline; }
-		.skip { margin-top: 0.7rem; align-self: center; background: none; border: 0; padding: 0.2rem; color: var(--muted); font: inherit; font-size: 0.9rem; text-decoration: underline; cursor: pointer; }
-		.skip:hover { color: var(--ink); }
-		.btn:active { transform: translateY(1px); box-shadow: 0 4px 10px -6px rgba(26, 25, 22, 0.5); }
+		.btn-line { background: var(--white); color: var(--plum); margin-top: 0.7rem; }
+		.btn-line:hover { background: var(--orange); border-color: var(--orange); color: var(--white); }
+		.btn small { font: 500 0.85rem var(--mono); opacity: 0.85; }
+		.pick { margin-top: 0.8rem; }
+		.skip { display: block; margin: 1rem auto 0; padding: 0.2rem; background: none; border: 0; font: inherit; font-size: 0.92rem; color: var(--text); text-decoration: underline; cursor: pointer; }
+		.skip:hover { color: var(--plum); }
+		.alt { font-size: 0.93rem; }
 
-		.console { margin: 0.4rem 1.2rem 0.5rem; padding-top: 1rem; border-top: 1px solid var(--line); font: 400 0.8rem/1.6 var(--mono); color: var(--muted); }
-		.console .ln { animation: line 0.5s var(--ease) var(--d, 0s) backwards; }
-		.console b { color: var(--ink); font-weight: 500; }
-		.cursor { display: inline-block; width: 0.55em; height: 1.05em; background: var(--orange); vertical-align: -0.2em; margin-left: 0.25rem; border-radius: 1px; animation: blink 1.1s steps(1) infinite; }
-
-		footer { padding: clamp(0.5rem, 1.6vh, 1.5rem) 0 clamp(0.8rem, 2vh, 2.2rem); font-size: 0.8rem; line-height: 1.4; color: var(--muted); }
-		footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem 2rem; }
-		footer p { max-width: 44rem; }
-		footer .legal span { display: block; text-wrap: balance; }
-		footer a:hover { color: var(--ink); }
-
-		@keyframes wire { from { stroke-dasharray: 0 100; } to { stroke-dasharray: 100 100; } }
-		@keyframes caret { from, to { border-right-color: var(--orange); } }
-		@keyframes type { from { width: 0; } }
-		@keyframes show { from { opacity: 0; } }
-		@keyframes fade { from { opacity: 0; } }
-		@keyframes line { from { opacity: 0; transform: translateX(-8px); } }
-		@keyframes ripple { from { opacity: 0.9; transform: scale(0.6); } to { opacity: 0; transform: scale(2.4); } }
-		@keyframes lock-out { to { opacity: 0; transform: scale(0.6); } }
-		@keyframes lock-in { from { opacity: 0; transform: translateY(2px) scale(0.6); } }
-		@keyframes slide { from { opacity: 0; transform: translateX(-14px); } }
-		.fit body { height: 100vh; height: 100dvh; overflow: hidden; }
-		@keyframes rise { from { opacity: 0; transform: translateY(22px); } }
-		@keyframes grow { from { transform: scaleY(0); } }
-		@keyframes click { from { transform: rotate(calc(var(--turn) - 45deg)); } }
-		@keyframes blink { 50% { opacity: 0; } }
-
-		@media (max-width: 62rem) {
-			main .wrap { grid-template-columns: 1fr; gap: 2.5rem; }
-					}
-		@media (max-height: 860px) { .medal { display: none; } }
-		@media (max-height: 760px) {
-			.console { display: none; }
-			.panel { padding: 0.6rem; }
-			.chlist li { padding: 0.28rem 0.7rem; }
-			.hint { margin-top: 0.5rem; }
-			h1 { font-size: clamp(1.7rem, min(4vw, 6.6vh), 3.2rem); }
-		}
-		@media (max-height: 640px) {
-			.hint, .lead { display: none; }
-			.cat { margin-bottom: 0.3rem; }
-			.chlist li { padding: 0.2rem 0.7rem; font-size: 0.86rem; }
-			.step { --sy: 0.55rem; }
-		}
-		@media (max-height: 500px) {
-			.chlist, .trace { display: none; }
-		}
-		@media (max-width: 34rem) {
-			body { font-size: 16px; }
-			.facts, .medal { display: none; }
-			.brand img { width: 2.3rem; height: 2.3rem; }
-			.brand { gap: 0.65rem; }
-			.brand-words { font-size: 0.6rem; line-height: 1.3; letter-spacing: 0.02em; }
-			.brand-words span { display: inline; }
-			.btn { padding: 0.85rem 1rem; gap: 0.6rem; font-size: 0.97rem; }
-			.btn .arrow { display: none; }
-			.top { padding: 0.7rem 0; }
-			main .wrap { gap: 1.4rem; }
-			.lead { font-size: 1rem; margin-top: 0.8rem; }
-			.chlist { margin-top: 0.9rem; }
-			.chlist .hint { display: none; }
-			.term { font-size: 0.74rem; }
-				.circuit { opacity: 0.55; height: 9vh; }
-			.wrap { padding: 0 1.1rem; }
-			main { padding: 0.4rem 0 1rem; }
-			.panel { padding: 0.5rem; border-radius: 1.4rem; }
-			.step { grid-template-columns: 2.1rem minmax(0, 1fr); gap: 0 0.8rem; padding: var(--sy) 0.8rem calc(var(--sy) + 0.1rem); }
-			.node { width: 2.1rem; height: 2.1rem; }
-			.step:not(:last-child)::before { left: calc(0.8rem + 1.05rem - 1px); top: calc(var(--sy) + 2.1rem); }
-			.btn { width: 100%; justify-content: center; }
-			.console { margin: 0.4rem 0.8rem 0.5rem; }
-		}
-		@media (max-width: 34rem) and (max-height: 700px) {
-			.chlist, .trace { display: none; }
-			footer { padding-bottom: 0.7rem; }
-			footer .legal { font-size: 0.68rem; }
-			footer .legal span { display: inline; }
-			main .wrap { gap: 1rem; }
-		}
-		@media (prefers-reduced-motion: reduce) {
-			*, *::before, *::after { animation: none !important; transition: none !important; }
-			.tx { animation: none !important; }
-		}
+		footer { border-top: 1px solid var(--line); background: var(--white); font-size: 0.84rem; color: var(--text); }
+		footer .wrap { padding-top: 1rem; padding-bottom: 1rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem 2rem; }
+		footer p { max-width: 42rem; }
 	</style>
 </head>
-<body class="s{{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}}">
-
-	<div class="bg" aria-hidden="true">
-		<div class="band l"></div><div class="band r"></div>
-		<svg class="circuit" viewBox="0 0 520 300" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
-			<path d="M520 60H410L370 100H240"/>
-			<path d="M520 180H450L410 220H320"/>
-			<path d="M450 0V45L410 85H350"/>
-			<path d="M330 0V40L290 80V140"/>
-			<path d="M200 0V60"/>
-			<circle cx="240" cy="100" r="5"/><circle cx="320" cy="220" r="5"/><circle cx="350" cy="85" r="5"/><circle cx="290" cy="140" r="5"/><circle cx="200" cy="60" r="5"/>
-		</svg>
-	</div>
-
-	<header class="top">
+<body>
+	<header>
 		<div class="wrap">
-			<a class="brand" href="/" aria-label="Fakulta mechatroniky, informatiky a mezioborových studií TUL">
-				<img src="/static/tul-fm-symbol.svg" alt="" width="46" height="46">
-				<span class="brand-words"><span>Fakulta mechatroniky,</span> <span>informatiky a mezioborových</span> <span>studií <u>TUL</u></span></span>
+			<a class="logo" href="/" aria-label="Fakulta mechatroniky, informatiky a mezioborových studií TUL">
+				<svg viewBox="0 0 330 72" role="img" aria-hidden="true" focusable="false">
+					<text x="0" y="20">Fakulta mechatroniky,</text>
+					<text x="0" y="44">informatiky a mezioborových</text>
+					<text x="0" y="68">studií TUL</text>
+				</svg>
 			</a>
 			{{if .Session}}<a class="out" href="/logout">Odhlásit se</a>{{end}}
 		</div>
@@ -879,138 +676,71 @@ const indexTemplate = `<!DOCTYPE html>
 
 	<main>
 		<div class="wrap">
-			<div>
-				{{if not .Session}}
-				<h1>Ověř se <mark>školním účtem</mark></h1>
-				<p class="lead">Přihlas se účtem TUL, vyber obor a rovnou tě provedeme na Discord a na fakultní server, kde dostaneš své role. Stačí to udělat jednou.</p>
-				{{else if not .Session.DiscordID}}
-				<h1>Školní účet <mark>ověřen</mark></h1>
-				<p class="lead">Jsi poznán jako {{.Session.Role}}. Zbývá vybrat obor a propojit Discord, pak se dostaneš na server.</p>
+			<section>
+				{{if and .Session .Session.DiscordID}}
+				<h1>Ověření dokončeno</h1>
+				<p class="lead">Role ti byly přiděleny a fakultní kanály na Discordu se ti odemkly.</p>
+				{{else if .Session}}
+				<h1>Školní účet ověřen</h1>
+				<p class="lead">Jsi poznán jako {{.Session.Role}}. Zbývá dokončit propojení s Discordem a dostaneš se na server.</p>
 				{{else}}
-				<h1>Ověření <mark>dokončeno</mark></h1>
-				<p class="lead">Role ti byly přiděleny. Fakultní kanály na Discordu se ti odemkly.</p>
+				<h1>Ověř se školním účtem</h1>
+				<p class="lead">Přihlas se účtem TUL a rovnou tě provedeme na Discord a na fakultní server, kde dostaneš své role. Stačí to udělat jednou.</p>
+				<ul class="points">
+					<li>Jedno přihlášení školním účtem ve tvaru jmeno.prijmeni@tul.cz.</li>
+					<li>Obor a role se přidělí hned, bez dalšího psaní.</li>
+					<li>Absolventi bez školního účtu mají vlastní cestu přes Discord.</li>
+				</ul>
 				{{end}}
-				<div class="chlist{{if and .Session .Session.DiscordID}} open{{end}}">
-					<div class="term" role="img" aria-label="Kanály, které se po ověření odemknou">
-						<p class="tl" style="--n:{{.Cmd.N}};--d:{{.Cmd.Delay}};--e:{{.Cmd.End}}"><span class="pr">$</span><span class="tx">{{.Cmd.Name}}</span></p>
-						{{range .Channels}}<p class="tl ch" style="--n:{{.N}};--d:{{.Delay}};--e:{{.End}}"><span class="hash">#</span><span class="tx">{{.Name}}</span><span class="st">{{if and $.Session $.Session.DiscordID}}odemčeno{{else}}zamčeno{{end}}</span></p>
-						{{end}}<p class="tl last"><span class="pr">$</span><span class="cursor" aria-hidden="true"></span></p>
-					</div>
-					<p class="hint">Ověření je jednorázové a po něm tě rovnou přesměrujeme na server</p>
-				</div>
-				<div class="medal" aria-hidden="true">
-					<img class="rays" src="/static/tul-fm-symbol.svg" alt="">
-					<img class="photo" src="/static/fm-optika.jpg" alt="">
-				</div>
-			</div>
+			</section>
 
-			<div class="side"><div class="panel">
+			<section class="card">
+				<ol class="progress" aria-label="Postup ověření">
+					<li class="{{if .Session}}done{{else}}current{{end}}">Školní účet</li>
+					<li class="{{if not .Session}}{{else if .Session.DiscordID}}done{{else}}current{{end}}">Obor a Discord</li>
+					<li class="{{if and .Session .Session.DiscordID}}current{{end}}">Server</li>
+				</ol>
+
 				{{if .NeedProgram}}
+				<h2>Jaký jsi obor?</h2>
+				<p>Vyber svůj studijní program, role ti přidělíme hned. Pak tě provedeme na Discord.</p>
 				<form class="pick" action="/obor" method="get">
-					<h2>Jaký jsi obor?</h2>
-					<p>Vyber svůj studijní program, role ti přidělíme rovnou. Pak tě provedeme na Discord.</p>
-					<button class="btn" type="submit" name="p" value="ME">Mechatronika (ME)</button>
-					<button class="btn" type="submit" name="p" value="IT">Informační technologie (IT)</button>
-					<button class="btn" type="submit" name="p" value="AVI">Aplikované vědy v inženýrství (AVI)</button>
+					<button class="btn btn-line" type="submit" name="p" value="ME">Mechatronika <small>ME</small></button>
+					<button class="btn btn-line" type="submit" name="p" value="IT">Informační technologie <small>IT</small></button>
+					<button class="btn btn-line" type="submit" name="p" value="AVI">Aplikované vědy v inženýrství <small>AVI</small></button>
 					<button class="skip" type="submit" name="p" value="-">Obor teď nevybírám</button>
 				</form>
+				{{else if not .Session}}
+				<h2>Přihlas se školním účtem</h2>
+				<p>Dál tě provedeme sami: obor, Discord i server.</p>
+				<a class="btn" href="/go">
+					<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+						<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+						<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+						<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+						<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+					</svg>
+					Přihlásit se školním účtem
+				</a>
+				<p class="alt">Absolvent bez školního účtu? <a href="/absolvent">Pokračuj přes Discord</a></p>
+				{{else if not .Session.DiscordID}}
+				<h2>Propoj Discord</h2>
+				<p>Připojíme tě na server a přidělíme role.</p>
+				<div class="who"><b>{{.Session.Name}}</b><br>{{.Session.Email}}<br><span class="chip">{{.Session.Role}}</span></div>
+				<a class="btn" href="{{.DiscordURL}}">Pokračovat na Discord</a>
 				{{else}}
-				<ol class="steps">
-					<li class="step {{if .Session}}done{{else}}current{{end}}">
-						<span class="node" aria-hidden="true">{{if .Session}}<svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}1{{end}}</span>
-						<div class="head"><h2>Školní účet</h2><span class="chip">{{if .Session}}Hotovo{{else}}Na řadě{{end}}</span></div>
-						<div class="body">
-							{{if not .Session}}
-								<p>Přihlas se účtem ve tvaru jmeno.prijmeni@tul.cz. Dál tě provedeme sami.</p>
-								<a href="/go" class="btn btn-ms">
-									<svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
-										<rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-										<rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-										<rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-										<rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-									</svg>
-									Přihlásit se pomocí Microsoftu
-									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
-								</a>
-									<p class="alt">Absolvent bez školního účtu? <a href="/absolvent">Pokračuj přes Discord</a></p>
-							{{else}}
-								<p class="who"><b>{{.Session.Name}}</b><br>{{.Session.Email}}</p>
-								<span class="role"><i></i>{{.Session.Role}}</span>
-							{{end}}
-						</div>
-					</li>
-
-					<li class="step {{if not .Session}}todo{{else if .Session.DiscordID}}done{{else}}current{{end}}">
-						<span class="node" aria-hidden="true">{{if and .Session .Session.DiscordID}}<svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 7.5l3 3 6-7"/></svg>{{else}}<svg width="16" height="12" viewBox="0 0 127.14 96.36" fill="currentColor"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/></svg>{{end}}</span>
-						<div class="head"><h2>Discord</h2><span class="chip">{{if not .Session}}Čeká{{else if .Session.DiscordID}}Hotovo{{else}}Na řadě{{end}}</span></div>
-						<div class="body">
-							{{if and .Session (not .Session.DiscordID)}}
-								<p>Propojíme účet s tvým Discordem a přidáme tě na server.</p>
-								<a href="{{.DiscordURL}}" class="btn btn-discord">
-									<svg width="20" height="16" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
-										<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
-									</svg>
-									Propojit s Discordem
-									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
-								</a>
-							{{else if .Session}}
-								<p class="who">Účet je propojený.</p>
-							{{else}}
-								<p>Naváže se samo po výběru oboru.</p>
-							{{end}}
-						</div>
-					</li>
-
-					<li class="step {{if and .Session .Session.DiscordID}}current{{else}}todo{{end}}">
-						<span class="node" aria-hidden="true">3</span>
-						<div class="head"><h2>Server</h2><span class="chip">{{if and .Session .Session.DiscordID}}Na řadě{{else}}Čeká{{end}}</span></div>
-						<div class="body">
-							{{if and .Session .Session.DiscordID}}
-								<p>Role ti byly přiděleny automaticky a fakultní kanály se ti odemkly.</p>
-								<a href="{{if .ServerURL}}{{.ServerURL}}{{else}}https://discord.com/app{{end}}" class="btn">
-									Otevřít server na Discordu
-									<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6h15M11 1l5 5-5 5"/></svg>
-								</a>
-							{{else}}
-								<p>Po přihlášení tě přesměrujeme na server s přidělenými rolemi.</p>
-							{{end}}
-						</div>
-					</li>
-				</ol>
-<div class="console" aria-live="polite">
-					{{if not .Session}}
-					<p class="ln" style="--d:0.3s">&gt; <b>čeká na přihlášení školním účtem</b><span class="cursor" aria-hidden="true"></span></p>
-					{{else if not .Session.DiscordID}}
-					<p class="ln" style="--d:0.4s">&gt; školní účet … <b>ověřen</b></p>
-					<p class="ln" style="--d:1.1s">&gt; discord … <b>čeká na propojení</b><span class="cursor" aria-hidden="true"></span></p>
-					{{else}}
-					<p class="ln" style="--d:0.4s">&gt; školní účet … <b>ověřen</b></p>
-					<p class="ln" style="--d:1.0s">&gt; discord … <b>propojen</b></p>
-					<p class="ln" style="--d:1.6s">&gt; role … <b>{{.Session.Role}}</b></p>
-					<p class="ln" style="--d:2.2s">&gt; <b>hotovo</b><span class="cursor" aria-hidden="true"></span></p>
-					{{end}}
-				</div>
+				<h2>Hotovo</h2>
+				<p>Účet je propojený a role přidělené.</p>
+				<div class="who"><b>{{.Session.Name}}</b><br>{{.Session.Email}}<br><span class="chip">{{.Session.Role}}</span></div>
+				<a class="btn" href="{{if .ServerURL}}{{.ServerURL}}{{else}}https://discord.com/app{{end}}">Otevřít server na Discordu</a>
 				{{end}}
-			</div>
-			<svg class="trace" viewBox="0 0 480 64" role="img" aria-label="Postup ověření: krok {{if not .Session}}1{{else if not .Session.DiscordID}}2{{else}}3{{end}} ze 3">
-				<path class="base" d="M24 38H118L146 14H240"/>
-				<path class="base" d="M240 14H334L362 38H456"/>
-				<path class="lit {{if .Session}}on{{end}}" pathLength="100" d="M24 38H118L146 14H240"/>
-				<path class="lit {{if and .Session .Session.DiscordID}}on{{end}}" pathLength="100" d="M240 14H334L362 38H456"/>
-				<circle class="pad {{if .Session}}on{{else}}cur{{end}}" cx="24" cy="38" r="9"/>
-				<circle class="pad {{if not .Session}}{{else if .Session.DiscordID}}on{{else}}cur{{end}}" cx="240" cy="14" r="9"/>
-				<circle class="pad {{if and .Session .Session.DiscordID}}on{{end}}" cx="456" cy="38" r="9"/>
-				<text x="24" y="62" text-anchor="start" class="{{if .Session}}on{{end}}">Účet</text>
-				<text x="240" y="44" text-anchor="middle" class="{{if and .Session .Session.DiscordID}}on{{end}}">Discord</text>
-				<text x="456" y="62" text-anchor="end" class="{{if and .Session .Session.DiscordID}}on{{end}}">Server</text>
-			</svg>
-			</div>
+			</section>
 		</div>
 	</main>
 
 	<footer>
 		<div class="wrap">
-			<p class="legal"><span>Ukládáme jméno, školní e-mail, roli (student nebo zaměstnanec) a ID tvého Discord účtu.</span> <span>Jeden školní účet jde propojit s jedním Discordem.</span></p>
+			<p>Ukládáme jméno, školní e-mail, roli (student nebo zaměstnanec) a ID tvého Discord účtu. Jeden školní účet jde propojit s jedním Discordem.</p>
 			{{if .EnableDevMock}}<p><a href="/mock-msal">Simulovat MS</a> &middot; <a href="/mock-discord">Simulovat Discord</a></p>{{end}}
 		</div>
 	</footer>
