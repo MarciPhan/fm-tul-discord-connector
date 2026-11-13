@@ -760,15 +760,15 @@ const indexTemplate = `<!DOCTYPE html>
 		@keyframes spin { to { transform: rotate(360deg); } }
 		/* vyrazne tlacitka: oranzova s pulzem a sipkou, aby bylo jasne, ze se na ne ma kliknout */
 		.btn { font-size: 1.05rem; }
-		.btn-ms, .btn-discord { background: var(--orange); color: var(--ink); box-shadow: 0 10px 22px -10px rgba(234, 118, 3, 0.8); animation: pulse 2.2s ease-out infinite; }
-		.btn-ms:hover, .btn-discord:hover { background: var(--ink); color: #fff; animation: none; }
-		.btn-ms .arrow, .btn-discord .arrow { animation: nudge 1.4s ease-in-out infinite; }
+		a.btn.btn-ms, a.btn.btn-discord { background: var(--orange); color: var(--ink); box-shadow: 0 10px 22px -10px rgba(234, 118, 3, 0.8); animation: pulse 2.2s ease-out infinite; }
+		a.btn.btn-ms:hover, a.btn.btn-discord:hover { background: var(--ink); color: #fff; animation: none; }
+		a.btn.btn-ms .arrow, a.btn.btn-discord .arrow { animation: nudge 1.4s ease-in-out infinite; }
 		.pick .btn { background: #fff; color: var(--ink); border: 2px solid var(--orange); box-shadow: none; justify-content: center; }
 		.pick .btn:hover { background: var(--orange); color: var(--ink); }
-		.btn.busy { animation: none; }
+		a.btn.btn-ms.busy, a.btn.btn-discord.busy { animation: none; }
 		@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(234, 118, 3, 0.55); } 70% { box-shadow: 0 0 0 16px rgba(234, 118, 3, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 118, 3, 0); } }
 		@keyframes nudge { 50% { transform: translateX(6px); } }
-		@media (prefers-reduced-motion: reduce) { .btn-ms, .btn-discord, .btn .arrow { animation: none; } }
+		@media (prefers-reduced-motion: reduce) { a.btn.btn-ms, a.btn.btn-discord, .btn .arrow { animation: none; } }
 		.btn-ms { background: #2f2f2f; color: #fff; }
 		.btn-ms:hover { background: #1f1f1f; color: #fff; box-shadow: 0 14px 26px -12px rgba(47, 47, 47, 0.7); }
 		.btn-discord { background: #5865f2; color: #fff; box-shadow: 0 10px 22px -10px rgba(88, 101, 242, 0.7); }
