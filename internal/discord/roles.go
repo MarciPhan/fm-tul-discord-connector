@@ -46,7 +46,7 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 	}
 
 	if student.Role == "Absolvent FM" {
-		// Absolvent skolni ucet nema: dostane jen roli absolventa
+		// Absolvent skolni ucet nema: dostane jen roli absolventa; Student FM mu da az schvaleni spravcem (alumni_approval.go)
 		if id := resolveRoleID(serverRoles, "", "Absolvent FM"); id != "" {
 			rolesToAdd = append(rolesToAdd, id)
 		} else {
@@ -59,11 +59,6 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStaff, discordUserID)
 		}
 	} else {
-		if id := resolveRoleID(serverRoles, config.GetFMStudentRoleID(), roleNameStudent); id != "" {
-			rolesToAdd = append(rolesToAdd, id)
-		} else {
-			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStudent, discordUserID)
-		}
 	}
 
 	// Studijni program z vyberu na webu (jen ME, IT, AVI; jine hodnoty se ignoruji)

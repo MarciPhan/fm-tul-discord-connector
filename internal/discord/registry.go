@@ -46,6 +46,10 @@ func (reg *Registry) SyncWithGuild(s *discordgo.Session, guildID string) {
 
 // HandleInteraction nasmeruje interakci na spravny handler
 func (reg *Registry) HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type == discordgo.InteractionMessageComponent {
+		HandleAlumniApproval(s, i)
+		return
+	}
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
