@@ -118,3 +118,31 @@ func TestIndexOnlyMatchesRootAndKeepsState(t *testing.T) {
 		}
 	}
 }
+
+func TestStartProgramChoice(t *testing.T) {
+	config.Cfg.HMACSecret = "test-secret"
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /go", HandleStart)
+	mux.HandleFunc("GET /absolvent", HandleAlumni)
+
+	// obor z tlacitka se ulozi a vede na Microsoft
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/go?p=IT", nil))
+	if rec.Code != http.StatusFound || !strings.HasPrefix(rec.Header().Get("Location"), "https://login.microsoftonline.com/") {
+		t.Fatalf("/go?p=IT: code=%d location=%q", rec.Code, rec.Header().Get("Location"))
+	}
+
+	// tlacitko absolventa jde na cestu bez Microsoftu
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/go?p=ABS", nil))
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/absolvent" {
+		t.Fatalf("/go?p=ABS: code=%d location=%q", rec.Code, rec.Header().Get("Location"))
+	}
+
+	// neznamy obor se ignoruje, vstup funguje jako obycejny
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/go?p=HACK", nil))
+	if rec.Code != http.StatusFound || !strings.HasPrefix(rec.Header().Get("Location"), "https://login.microsoftonline.com/") {
+		t.Fatalf("/go?p=HACK: code=%d location=%q", rec.Code, rec.Header().Get("Location"))
+	}
+}

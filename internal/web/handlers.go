@@ -133,6 +133,15 @@ func HandleAlumni(w http.ResponseWriter, r *http.Request) {
 // na Microsoft (nebo, kdyz uz je clovek prihlaseny skolnim uctem, na Discord).
 func HandleStart(w http.ResponseWriter, r *http.Request) {
 	sess := session.GetOrCreate(w, r)
+
+	// Tlacitko na Discordu nese volbu: ME/IT/AVI = obor studenta, ABS = absolvent bez skolniho uctu
+	switch choice := r.URL.Query().Get("p"); choice {
+	case "ABS":
+		http.Redirect(w, r, "/absolvent", http.StatusFound)
+		return
+	case "ME", "IT", "AVI":
+		sess.SetPendingProgram(choice)
+	}
 	origin := config.Cfg.BaseURL
 	if origin == "" {
 		origin = "http://" + r.Host
@@ -142,6 +151,9 @@ func HandleStart(w http.ResponseWriter, r *http.Request) {
 		if st.DiscordID != "" {
 			http.Redirect(w, r, "/", http.StatusFound) // uz overen, stranka ukaze odkaz na server
 			return
+		}
+		if st.Program == "" {
+			st.Program = sess.GetPendingProgram()
 		}
 		if st.Program == "" {
 			http.Redirect(w, r, "/", http.StatusFound) // jeste nevybral obor
@@ -347,6 +359,10 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 
 	tokenRoles := security.IDTokenRoles(tokenRes.IDToken)
 	role := security.DetermineRole(tokenRoles, profile.JobTitle, profile.EmployeeType, email)
+	program := programForRole(role) // zamestnanec "-", student ""
+	if program == "" {
+		program = sess.GetPendingProgram() // obor z tlacitka na Discordu
+	}
 	log.Printf("MS profil %s: roles=%v jobTitle=%q employeeType=%q department=%q -> %s", email, tokenRoles, profile.JobTitle, profile.EmployeeType, profile.Department, role)
 
 	sess.SetStudent(&storage.Student{
@@ -356,11 +372,11 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		Faculty:     "FM",
 		Role:        role,
 		VerifiedAt:  time.Now(),
-		Program:     programForRole(role),
+		Program:     program,
 	})
 
-	// Student nejdriv vybere obor (uvodni stranka), zamestnanec jde rovnou na Discord
-	if programForRole(role) == "" {
+	// Obor z tlacitka jde rovnou dal; jinak ho student vybere na uvodni strance (zalozni cesta)
+	if program == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
