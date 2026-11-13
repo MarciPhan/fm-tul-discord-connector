@@ -9,15 +9,29 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// CmdSetup implementuje /setup prikaz pro odeslani overovaci zpravy s tlacitkem
+// CmdSetup implementuje /setup prikaz pro odeslani overovaci zpravy s tlacitky oboru
 type CmdSetup struct{}
 
 func (c *CmdSetup) Info() *discordgo.ApplicationCommand {
 	adminPerm := int64(discordgo.PermissionAdministrator)
 	return &discordgo.ApplicationCommand{
 		Name:                     "setup",
-		Description:              "Odešle oficiální ověřovací zprávu s tlačítkem (pouze administrátor)",
+		Description:              "Odešle oficiální ověřovací zprávu s tlačítky (pouze administrátor)",
 		DefaultMemberPermissions: &adminPerm,
+	}
+}
+
+// verifyButtons vraci tlacitka overeni: kazde rovnou spusti overeni s ulozenym oborem
+func verifyButtons() []discordgo.MessageComponent {
+	link := func(label, path string) discordgo.MessageComponent {
+		return discordgo.Button{Label: label, Style: discordgo.LinkButton, URL: config.Cfg.PathURL(path)}
+	}
+	return []discordgo.MessageComponent{
+		link("Ověřit se: ME", "/go?p=ME"),
+		link("Ověřit se: IT", "/go?p=IT"),
+		link("Ověřit se: AVI", "/go?p=AVI"),
+		link("Ověřit se: zaměstnanec", "/go"),
+		link("Ověřit se: absolvent", "/go?p=ABS"),
 	}
 }
 
@@ -29,9 +43,9 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: "Jak začít",
-				Value: "1. Klikni na **Ověřit se školním účtem** pod touto zprávou a přihlas se účtem `@tul.cz`.\n" +
-					"2. Po ověření dostaneš role a odemknou se ti fakultní kanály.\n" +
-					"3. Svůj studijní program a případně roli absolventa si zvol v kanálu **#🎯-vyber-oboru**.",
+				Value: "1. Klikni na tlačítko **Ověřit se** podle svého oboru: **ME**, **IT**, **AVI**, nebo **zaměstnanec**. Přihlásíš se školním účtem `@tul.cz`.\n" +
+					"2. Tím jsi ověřen a rovnou dostaneš role. Odemknou se ti fakultní kanály.\n" +
+					"3. Absolvent bez školního účtu zvolí **Ověřit se: absolvent**.",
 			},
 			{
 				Name: "Struktura serveru",
@@ -50,28 +64,19 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		},
 	}
 
-	btn := discordgo.Button{
-		Label: "Ověřit se školním účtem",
-		Style: discordgo.LinkButton,
-		URL:   config.Cfg.StartURL(),
-	}
-
 	sentMsg, err := s.ChannelMessageSendComplex(i.ChannelID, &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{embed},
 		Components: []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{btn},
-			},
+			discordgo.ActionsRow{Components: verifyButtons()},
 		},
 	})
-
 	if err != nil {
 		respondEphemeral(s, i, "Chyba při odesílání zprávy.")
 		return
 	}
 
 	respondEphemeral(s, i, "Ověřovací zpráva byla odeslána do tohoto kanálu.")
-	
+
 	username := GetInteractionUsername(i)
 	log.Printf("/setup: správce %s odeslal ověřovací zprávu (ID: %s)", username, sentMsg.ID)
 	audit.Log(audit.LevelInfo, "Inicializace serveru", "Správce **"+username+"** vytvořil pomocí `/setup` ověřovací bod.")
