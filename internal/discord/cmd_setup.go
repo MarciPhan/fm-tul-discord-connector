@@ -21,17 +21,11 @@ func (c *CmdSetup) Info() *discordgo.ApplicationCommand {
 	}
 }
 
-// verifyButtons vraci tlacitka overeni: kazde rovnou spusti overeni s ulozenym oborem
+// verifyButtons vraci tlacitka overeni: hlavni pro studenty a zamestnance, druhe pro absolventy bez skolniho uctu
 func verifyButtons() []discordgo.MessageComponent {
-	link := func(label, path string) discordgo.MessageComponent {
-		return discordgo.Button{Label: label, Style: discordgo.LinkButton, URL: config.Cfg.PathURL(path)}
-	}
 	return []discordgo.MessageComponent{
-		link("Ověřit se: ME", "/go?p=ME"),
-		link("Ověřit se: IT", "/go?p=IT"),
-		link("Ověřit se: AVI", "/go?p=AVI"),
-		link("Ověřit se: zaměstnanec", "/go"),
-		link("Ověřit se: absolvent", "/go?p=ABS"),
+		discordgo.Button{Label: "Ověřit se", Style: discordgo.LinkButton, URL: config.Cfg.PathURL("/go")},
+		discordgo.Button{Label: "Jsem absolvent", Style: discordgo.LinkButton, URL: config.Cfg.PathURL("/go?p=ABS")},
 	}
 }
 
@@ -43,9 +37,9 @@ func (c *CmdSetup) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) 
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name: "Jak začít",
-				Value: "1. Klikni na tlačítko **Ověřit se** podle svého oboru: **ME**, **IT**, **AVI**, nebo **zaměstnanec**. Přihlásíš se školním účtem `@tul.cz`.\n" +
-					"2. Tím jsi ověřen a rovnou dostaneš role. Odemknou se ti fakultní kanály.\n" +
-					"3. Absolvent bez školního účtu zvolí **Ověřit se: absolvent**.",
+				Value: "1. Klikni na **Ověřit se** a přihlas se školním účtem `@tul.cz`.\n" +
+					"2. Vyber svůj obor, role se ti přidělí a odemknou se fakultní kanály.\n" +
+					"3. Absolvent bez školního účtu klikne na **Jsem absolvent**.",
 			},
 			{
 				Name: "Struktura serveru",
