@@ -58,7 +58,14 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 		} else {
 			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStaff, discordUserID)
 		}
-	} else {
+	}
+	// Student FM dostane student a také zaměstnanec, který je zároveň student (doktorand apod.)
+	if student.Role == "Student FM" || (student.Role == "Zaměstnanec FM" && student.AlsoStudent) {
+		if id := resolveRoleID(serverRoles, config.GetFMStudentRoleID(), roleNameStudent); id != "" {
+			rolesToAdd = append(rolesToAdd, id)
+		} else {
+			log.Printf("CHYBA: role %q na serveru neexistuje, uživatel %s ji nedostane", roleNameStudent, discordUserID)
+		}
 	}
 
 	// Studijni program z vyberu na webu (jen ME, IT, AVI; jine hodnoty se ignoruji)

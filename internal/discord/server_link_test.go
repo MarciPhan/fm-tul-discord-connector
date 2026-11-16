@@ -3,7 +3,7 @@ package discord
 import "testing"
 
 func TestServerLink(t *testing.T) {
-	const invite = "https://discord.gg/RfWG6vYVj2"
+	const invite = "https://discord.gg/ZhhpKaZkwv"
 	cases := []struct {
 		name   string
 		member bool
