@@ -145,7 +145,7 @@ func getEnvFallback(primary, secondary string) string {
 }
 
 // DefaultInviteURL je oficialni trvala pozvanka na Discord FM TUL (kanal #vitej-na-fm, bez expirace)
-const DefaultInviteURL = "https://discord.gg/RfWG6vYVj2"
+const DefaultInviteURL = "https://discord.gg/ZhhpKaZkwv"
 
 // inviteURL pouzije oficialni pozvanku, pokud neni v .env nastavena vlastni (nebo zustal vzor z .env.example)
 func inviteURL(v string) string {
