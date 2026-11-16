@@ -376,6 +376,7 @@ func HandleMSAL(w http.ResponseWriter, r *http.Request) {
 		Email:       email,
 		Faculty:     "FM",
 		Role:        role,
+		AlsoStudent: role == "Zaměstnanec FM" && security.HasStudentAndEmployeeRoles(tokenRoles),
 		VerifiedAt:  time.Now(),
 		Program:     program,
 	})
