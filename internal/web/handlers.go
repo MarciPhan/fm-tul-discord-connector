@@ -203,6 +203,11 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	serverURL := config.Cfg.DiscordInviteURL
 	if st := sess.GetStudent(); st != nil && st.DiscordID != "" {
 		serverURL = discord.ServerLink(st.DiscordID, serverURL)
+		// Kdo už má propojený Discord, ale na serveru není, se přidá automaticky
+		// stejně jako v krocích 1 a 2 (bez pozvánky)
+		if serverURL == config.Cfg.DiscordInviteURL {
+			serverURL = discordURL
+		}
 	}
 
 	data := map[string]interface{}{
