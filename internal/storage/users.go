@@ -21,6 +21,7 @@ type Student struct {
 	Email       string    `json:"email"`
 	Faculty     string    `json:"faculty"`
 	Role        string    `json:"role"` // "Student FM" nebo "Zaměstnanec FM"
+	AlsoStudent bool      `json:"also_student,omitempty"` // zaměstnanec, který je zároveň student: dostane obě role
 	VerifiedAt  time.Time `json:"verified_at"`
 	Program     string    `json:"program,omitempty"` // "ME", "IT", "AVI" nebo "-" (nevybráno / zaměstnanec / absolvent)
 }
