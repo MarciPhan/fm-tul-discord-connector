@@ -108,3 +108,17 @@ func DetermineRole(tokenRoles []string, jobTitle, employeeType, email string) st
 	}
 	return "Student FM"
 }
+
+// HasStudentAndEmployeeRoles je true, kdyz ID token nese soucasne roli studenta i zamestnance
+func HasStudentAndEmployeeRoles(tokenRoles []string) bool {
+	var student, employee bool
+	for _, r := range tokenRoles {
+		switch strings.ToLower(strings.TrimSpace(r)) {
+		case "student":
+			student = true
+		case "employee", "staff", "zamestnanec", "zaměstnanec":
+			employee = true
+		}
+	}
+	return student && employee
+}

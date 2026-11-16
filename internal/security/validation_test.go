@@ -38,3 +38,12 @@ func TestIDTokenRoles(t *testing.T) {
 		t.Error("neplatný token má vrátit nil")
 	}
 }
+
+func TestHasStudentAndEmployeeRoles(t *testing.T) {
+	if !HasStudentAndEmployeeRoles([]string{"student", "employee"}) {
+		t.Error("student + employee má vrátit true")
+	}
+	if HasStudentAndEmployeeRoles([]string{"employee"}) || HasStudentAndEmployeeRoles([]string{"student"}) {
+		t.Error("jedna role nemá vrátit true")
+	}
+}
