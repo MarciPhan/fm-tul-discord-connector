@@ -146,3 +146,24 @@ func TestStartProgramChoice(t *testing.T) {
 		t.Fatalf("/go?p=HACK: code=%d location=%q", rec.Code, rec.Header().Get("Location"))
 	}
 }
+
+func TestProgramChoiceRules(t *testing.T) {
+	config.Cfg.HMACSecret = "test-secret"
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /obor", HandleProgram)
+	mux.HandleFunc("GET /absolvent", HandleAlumni)
+
+	// bez relace jde /obor na zacatek
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/obor?p=ME", nil))
+	if rec.Header().Get("Location") != "/go" {
+		t.Fatalf("/obor bez relace: location=%q", rec.Header().Get("Location"))
+	}
+
+	// absolvent (relace vznikne na /absolvent) smi "-", Discord OAuth dostane i s validnim oborem
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/absolvent", nil))
+	if !strings.HasPrefix(rec.Header().Get("Location"), "https://discord.com/") {
+		t.Fatalf("/absolvent: location=%q", rec.Header().Get("Location"))
+	}
+}

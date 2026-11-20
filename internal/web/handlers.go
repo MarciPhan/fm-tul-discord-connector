@@ -96,6 +96,10 @@ func HandleProgram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	st := sess.GetStudent()
+	if program == "-" && st.Role == "Student FM" {
+		http.Redirect(w, r, "/", http.StatusFound) // student musi vybrat ME, IT nebo AVI
+		return
+	}
 	st.Program = program
 	sess.SetStudent(st)
 
