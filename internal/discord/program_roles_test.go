@@ -51,3 +51,16 @@ func TestIsExclusive(t *testing.T) {
 		t.Error("absolvent nemá být výlučný vůči programům")
 	}
 }
+
+func TestBotRemovedReactionSkipsRoleRemoval(t *testing.T) {
+	if consumeBotRemoved("u", "m", "🎖") {
+		t.Fatal("nic nebylo oznaceno")
+	}
+	botRemovedReaction("u", "m", "🎖️")
+	if !consumeBotRemoved("u", "m", "🎖") {
+		t.Fatal("reakce smazana botem se musi pri odebrani preskocit")
+	}
+	if consumeBotRemoved("u", "m", "🎖") {
+		t.Fatal("oznaceni se spotrebuje jen jednou (dalsi sundani reakce clovekem odebere roli)")
+	}
+}

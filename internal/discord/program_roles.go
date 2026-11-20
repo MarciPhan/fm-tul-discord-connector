@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"sbibolet/internal/config"
 
@@ -174,7 +175,10 @@ func HandleProgramReactionAdd(s *discordgo.Session, r *discordgo.MessageReaction
 		return
 	}
 
-	if !isVerifiedMember(member, byName) {
+	// Absolvent skolni ucet nema, ale roli Absolvent FM dostal pri overeni, takze si ji smi potvrdit medaili
+	alumniOwnRole := roleName == roleNameAlumni && memberHasRole(member, byName[roleNameAlumni])
+	if !isVerifiedMember(member, byName) && !alumniOwnRole {
+		botRemovedReaction(r.UserID, r.MessageID, r.Emoji.APIName())
 		_ = s.MessageReactionRemove(r.ChannelID, r.MessageID, r.Emoji.APIName(), r.UserID)
 		return
 	}
@@ -194,6 +198,7 @@ func HandleProgramReactionAdd(s *discordgo.Session, r *discordgo.MessageReaction
 			if otherID, ok := byName[set.roles[other]]; ok {
 				_ = s.GuildMemberRoleRemove(r.GuildID, r.UserID, otherID)
 			}
+			botRemovedReaction(r.UserID, r.MessageID, other)
 			_ = s.MessageReactionRemove(r.ChannelID, r.MessageID, other, r.UserID)
 		}
 	}
@@ -212,6 +217,10 @@ func HandleProgramReactionRemove(s *discordgo.Session, r *discordgo.MessageReact
 	}
 	emoji := normalizeEmoji(r.Emoji.Name)
 	if !isAnyReactionEmoji(emoji) {
+		return
+	}
+	// reakci smazal bot sam (odmitnuta nebo vymenena): role se nesmi sahat
+	if consumeBotRemoved(r.UserID, r.MessageID, r.Emoji.APIName()) {
 		return
 	}
 	set := findReactionSet(s, r.ChannelID, r.MessageID)
@@ -242,4 +251,45 @@ func isAnyReactionEmoji(emoji string) bool {
 		}
 	}
 	return false
+}
+
+const roleNameAlumni = "Absolvent FM"
+
+func memberHasRole(member *discordgo.Member, roleID string) bool {
+	if roleID == "" {
+		return false
+	}
+	for _, r := range member.Roles {
+		if r == roleID {
+			return true
+		}
+	}
+	return false
+}
+
+// Reakce, ktere smazal bot sam; jejich smazani nesmi spustit odebrani role
+var (
+	botRemovedMux sync.Mutex
+	botRemoved    = map[string]time.Time{}
+)
+
+func botRemovedReaction(userID, messageID, emoji string) {
+	botRemovedMux.Lock()
+	defer botRemovedMux.Unlock()
+	now := time.Now()
+	for k, t := range botRemoved {
+		if now.Sub(t) > time.Minute {
+			delete(botRemoved, k)
+		}
+	}
+	botRemoved[userID+"|"+messageID+"|"+normalizeEmoji(emoji)] = now
+}
+
+func consumeBotRemoved(userID, messageID, emoji string) bool {
+	botRemovedMux.Lock()
+	defer botRemovedMux.Unlock()
+	k := userID + "|" + messageID + "|" + normalizeEmoji(emoji)
+	t, ok := botRemoved[k]
+	delete(botRemoved, k)
+	return ok && time.Since(t) < time.Minute
 }

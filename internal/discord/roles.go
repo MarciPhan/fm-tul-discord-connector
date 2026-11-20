@@ -120,6 +120,7 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 	}
 
 	// Uzivatel jiz na serveru je -> Pridame role a aktualizujeme prezdivku
+	roleFailures := 0
 	for _, roleID := range rolesToAdd {
 		roleURL := fmt.Sprintf("https://discord.com/api/v10/guilds/%s/members/%s/roles/%s", guildID, discordUserID, roleID)
 		rReq, _ := http.NewRequest("PUT", roleURL, nil)
@@ -127,11 +128,13 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 		rResp, rErr := client.Do(rReq)
 		if rErr != nil {
 			log.Printf("CHYBA: přidání role %s uživateli %s selhalo: %v", roleID, discordUserID, rErr)
+			roleFailures++
 			continue
 		}
 		if rResp.StatusCode >= 300 {
 			errBody, _ := io.ReadAll(io.LimitReader(rResp.Body, 512))
 			log.Printf("CHYBA: přidání role %s uživateli %s selhalo (status: %d): %s", roleID, discordUserID, rResp.StatusCode, errBody)
+			roleFailures++
 		}
 		rResp.Body.Close()
 	}
@@ -159,6 +162,9 @@ func PerformJoinAndRole(discordUserID, userAccessToken string, student *storage.
 		}
 	}
 
+	if roleFailures > 0 {
+		return fmt.Errorf("Discord odmítl přidělit %d z rolí", roleFailures)
+	}
 	return nil
 }
 
